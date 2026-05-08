@@ -1,0 +1,35 @@
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import AppLayout from "./layouts/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import History from "./pages/History";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { getToken } from "./utils/auth";
+
+const ProtectedRoute = ({ children }) => {
+  if (!getToken()) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
+
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <AppLayout />
+  </ProtectedRoute>
+);
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route element={<ProtectedLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/history" element={<History />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

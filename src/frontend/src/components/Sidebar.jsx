@@ -1,0 +1,20 @@
+import { NavLink } from "react-router-dom";
+
+const navLinkClass = ({ isActive }) =>
+  isActive ? "nav-link active" : "nav-link";
+
+export default function Sidebar() {
+  return (
+    <aside className="sidebar">
+      <div className="brand">LPR System</div>
+      <nav className="nav">
+        <NavLink to="/dashboard" className={navLinkClass} end>
+          Dashboard
+        </NavLink>
+        <NavLink to="/history" className={navLinkClass}>
+          History
+        </NavLink>
+      </nav>
+    </aside>
+  );
+}

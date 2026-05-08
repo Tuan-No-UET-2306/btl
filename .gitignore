@@ -1,0 +1,285 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+.project
+.classpath
+.settings/
+
+# Project-specific: data (raw, processed, splits)
+data/raw/
+data/processed/
+data/ocr
+data/paddleocr_dataset
+data/splits/
+!data/README.md   # keep README to explain structure
+
+# ──────────────────────────────────────────────
+#  AI / Model weights (large files)
+# ──────────────────────────────────────────────
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+*.weights
+*.bin
+models/
+runs/
+weights/
+!models/README.md
+!weights/README.md
+src/ai_engine/weights/
+!src/ai_engine/weights/README.md
+
+# PaddleOCR inference model
+src/ai_engine/inference/
+
+# Logs
+logs/
+*.log
+log/
+**/logs/
+
+# Database files (local)
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
+pgdata/
+
+# Redis dump
+dump.rdb
+
+# MinIO / S3 local data
+minio_data/
+
+# Docker artifacts
+*.pid
+docker-compose.override.yml   # if you use custom overrides locally
+
+# Next.js / frontend build
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/node_modules/
+frontend/.env.local
+frontend/.env*.local
+frontend/.vercel
+frontend/*.tsbuildinfo
+
+# Backend temp files
+backend/__pycache__/
+backend/.pytest_cache/
+
+# AI engine temp
+src/ai_engine/__pycache__/
+src/ai_engine/core/__pycache__/
+src/ai_engine/weights/*.tmp
+
+# Common cache
+__pycache__/
+**/__pycache__/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Kaggle credentials
+kaggle.json
+.kaggle/
+
+# Environment variables (except example)
+.env
+.env.*
+!.env.example
+
+# Script outputs / benchmark results
+benchmark_results.json
+*.csv
+output/
+test_output/
+
+# Visual Studio Code (workspace)
+*.code-workspace
+
+# PyTorch / TensorFlow logs
+lightning_logs/
+wandb/
+mlruns/
+*.tfevents.*
+
+# Gunicorn / uvicorn
+gunicorn.pid
+uvicorn.pid
+
+# Certificates (if any)
+*.crt
+*.key
+*.pem
+
+# Project-specific ignores for deployment
+deploy/docker/volumes/
+deploy/nginx/nginx.conf   # except you want to track a template, use .example
+!deploy/nginx/nginx.conf.example
+
+# Temporal files from data processing
+*.intermediate
+*.preprocessed
+
+# Markdown folder
+md/
+GEMINI.md
