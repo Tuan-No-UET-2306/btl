@@ -20,8 +20,12 @@ from ...socket.manager import manager
 router = APIRouter()
 
 
-def _get_video(db: Session, video_id: int) -> UploadedVideo:
-    video = db.query(UploadedVideo).filter(UploadedVideo.id == video_id).first()
+def _get_video(db: Session, video_id: int, user_id: int) -> UploadedVideo:
+    video = (
+        db.query(UploadedVideo)
+        .filter(UploadedVideo.id == video_id, UploadedVideo.user_id == user_id)
+        .first()
+    )
     if not video:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found")
     return video
@@ -102,7 +106,12 @@ def list_videos(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    videos = db.query(UploadedVideo).order_by(UploadedVideo.id.desc()).all()
+    videos = (
+        db.query(UploadedVideo)
+        .filter(UploadedVideo.user_id == current_user.id)
+        .order_by(UploadedVideo.id.desc())
+        .all()
+    )
     for video in videos:
         count = (
             db.query(VideoDetection)
@@ -119,7 +128,7 @@ def get_video_detail(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    video = _get_video(db, video_id)
+    video = _get_video(db, video_id, current_user.id)
     detections = (
         db.query(VideoDetection)
         .filter(VideoDetection.uploaded_video_id == video_id)
@@ -137,7 +146,7 @@ def list_video_detections(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _get_video(db, video_id)
+    _get_video(db, video_id, current_user.id)
     return (
         db.query(VideoDetection)
         .filter(VideoDetection.uploaded_video_id == video_id)
@@ -157,7 +166,7 @@ def create_video_detection(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    video = _get_video(db, video_id)
+    video = _get_video(db, video_id, current_user.id)
 
     detection = VideoDetection(
         uploaded_video_id=video_id,
@@ -192,7 +201,7 @@ def queue_video(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    video = _get_video(db, video_id)
+    video = _get_video(db, video_id, current_user.id)
     video.status = "processing"
     db.commit()
 

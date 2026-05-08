@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.router import api_router
 from .core.config import CORS_ORIGINS
-from .models.database import Base, engine
+from .models.database import Base, engine, ensure_schema
 from .services.minio_service import minio_service
 
 app = FastAPI(title="LPR System API")
@@ -12,6 +12,7 @@ app = FastAPI(title="LPR System API")
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_schema()
     minio_service.ensure_bucket()
 
 
