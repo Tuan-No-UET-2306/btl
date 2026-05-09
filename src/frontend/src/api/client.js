@@ -48,6 +48,18 @@ export const detectionApi = {
     }),
 };
 
+export const lprApi = {
+  recognize: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/v1/lpr/recognize", {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: formData,
+    });
+  },
+};
+
 export const videoApi = {
   list: () =>
     request("/api/v1/videos", {

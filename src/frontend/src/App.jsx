@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
+import LicensePlateRecognition from "./pages/LicensePlateRecognition";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { getToken } from "./utils/auth";
@@ -28,6 +29,7 @@ export default function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/history" element={<History />} />
+        <Route path="/lpr" element={<LicensePlateRecognition />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
