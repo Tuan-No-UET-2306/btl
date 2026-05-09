@@ -172,7 +172,6 @@ data/splits/
 *.trt
 *.weights
 *.bin
-models/
 runs/
 weights/
 !models/README.md
