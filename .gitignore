@@ -165,16 +165,12 @@ data/splits/
 # ──────────────────────────────────────────────
 #  AI / Model weights (large files)
 # ──────────────────────────────────────────────
-*.pt
-*.pth
-*.onnx
 *.engine
 *.trt
 *.weights
 *.bin
 runs/
 weights/
-!models/README.md
 !weights/README.md
 src/ai_engine/weights/
 !src/ai_engine/weights/README.md
