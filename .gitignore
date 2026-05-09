@@ -216,6 +216,8 @@ frontend/.env*.local
 frontend/.vercel
 frontend/*.tsbuildinfo
 
+**/node_modules/
+
 # Backend temp files
 backend/__pycache__/
 backend/.pytest_cache/
