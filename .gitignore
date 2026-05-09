@@ -220,10 +220,7 @@ frontend/*.tsbuildinfo
 backend/__pycache__/
 backend/.pytest_cache/
 
-# AI engine temp
-src/ai_engine/__pycache__/
-src/ai_engine/core/__pycache__/
-src/ai_engine/weights/*.tmp
+
 
 # Common cache
 __pycache__/
