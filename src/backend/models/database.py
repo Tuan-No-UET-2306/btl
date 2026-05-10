@@ -41,13 +41,23 @@ def _ensure_user_schema(inspector) -> None:
         if "created_at" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN created_at TIMESTAMPTZ DEFAULT now()"))
 
-        # Fix email column: old schema has email NOT NULL but model doesn't use it
+        # Fix email column: old schema has email with UNIQUE constraint → causes duplicate key error
         if "email" in user_columns:
             col_info = [c for c in inspector.get_columns("users") if c["name"] == "email"]
             if col_info and col_info[0].get("nullable", True) is False:
                 connection.execute(text("ALTER TABLE users ALTER COLUMN email DROP NOT NULL"))
                 connection.execute(text("ALTER TABLE users ALTER COLUMN email SET DEFAULT ''"))
                 logger.info("Fixed users.email: dropped NOT NULL, set DEFAULT ''")
+
+            # Drop unique constraint on email (old schema)
+            try:
+                constraints = [c for c in inspector.get_unique_constraints("users") if c["column_names"] == ["email"]]
+                if constraints:
+                    constraint_name = constraints[0]["name"]
+                    connection.execute(text(f'ALTER TABLE users DROP CONSTRAINT "{constraint_name}"'))
+                    logger.info("Dropped unique constraint '%s' on users.email", constraint_name)
+            except Exception as e:
+                logger.warning("Could not drop unique constraint on email: %s", e)
 
 
 def _ensure_video_schema(inspector) -> None:

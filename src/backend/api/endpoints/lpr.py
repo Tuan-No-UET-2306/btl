@@ -1,12 +1,12 @@
-"""License Plate Recognition API endpoint - accepts image upload and returns plate number."""
+"""License Plate Recognition API endpoint — accepts image upload and returns plate number."""
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from ...models.database import SessionLocal
-from ...models.models import DetectionHistory, User
+from ...models.models import User
+from ...services.detection_service import DetectionService
 from ...services.lpr_service import lpr_service
-from ...socket.manager import manager
 from ..dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -65,29 +65,12 @@ def recognize_plate(
 
         plates = result["plates"]
 
-        # Save all detected plates to history
+        # Save detected plates to history via DetectionService
         db = SessionLocal()
         try:
-            for plate in plates:
-                if plate["plate_number"]:
-                    detection = DetectionHistory(
-                        plate_number=plate["plate_number"],
-                        confidence=plate["confidence"],
-                        image_url=None,
-                        vehicle_type=None,
-                        is_blacklisted=False,
-                    )
-                    db.add(detection)
-                    db.flush()
-
-                    manager.broadcast_event({
-                        "event": "detection_created",
-                        "detection_id": detection.id,
-                        "plate_number": plate["plate_number"],
-                    })
-            db.commit()
+            detection_service = DetectionService(db)
+            detection_service.save_lpr_results(plates)
         except Exception as e:
-            db.rollback()
             logger.error("DB error saving detections: %s", e)
         finally:
             db.close()
