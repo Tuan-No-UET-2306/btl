@@ -1,7 +1,7 @@
 """
 Detection service — CRUD operations for detection history with WebSocket broadcasting.
 """
-
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -21,6 +21,25 @@ class DetectionService:
     def list_detections(self) -> list[DetectionHistory]:
         """Return all detections ordered by id descending."""
         return self.detection_repo.find_all()
+
+    def search_detections(
+        self,
+        plate_number: Optional[str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        is_blacklisted: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[DetectionHistory], int]:
+        """Search detections with filters and return (items, total)."""
+        return self.detection_repo.search(
+            plate_number=plate_number,
+            date_from=date_from,
+            date_to=date_to,
+            is_blacklisted=is_blacklisted,
+            page=page,
+            page_size=page_size,
+        )
 
     def create_detection(
         self,

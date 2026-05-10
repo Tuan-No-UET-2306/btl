@@ -81,7 +81,34 @@ def _ensure_video_schema(inspector) -> None:
         )
 
 
+def _ensure_blacklist_schema(inspector) -> None:
+    """Ensure blacklisted_plates table exists."""
+    if "blacklisted_plates" in inspector.get_table_names():
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE blacklisted_plates ("
+                "  id SERIAL PRIMARY KEY,"
+                "  plate_number VARCHAR(32) NOT NULL UNIQUE,"
+                "  reason TEXT,"
+                "  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,"
+                "  created_at TIMESTAMPTZ DEFAULT now()"
+                ")"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE INDEX ix_blacklisted_plates_plate_number "
+                "ON blacklisted_plates(plate_number)"
+            )
+        )
+        logger.info("Created blacklisted_plates table")
+
+
 def ensure_schema() -> None:
     inspector = inspect(engine)
     _ensure_user_schema(inspector)
     _ensure_video_schema(inspector)
+    _ensure_blacklist_schema(inspector)

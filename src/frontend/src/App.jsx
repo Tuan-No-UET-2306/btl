@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./layouts/AppLayout";
+import Blacklist from "./pages/Blacklist";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import LicensePlateRecognition from "./pages/LicensePlateRecognition";
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/history" element={<History />} />
         <Route path="/lpr" element={<LicensePlateRecognition />} />
+        <Route path="/blacklist" element={<Blacklist />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

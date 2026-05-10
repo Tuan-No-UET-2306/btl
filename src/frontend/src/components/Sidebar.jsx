@@ -17,6 +17,9 @@ export default function Sidebar() {
         <NavLink to="/history" className={navLinkClass}>
           History
         </NavLink>
+        <NavLink to="/blacklist" className={navLinkClass}>
+          Blacklist
+        </NavLink>
       </nav>
     </aside>
   );

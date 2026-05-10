@@ -41,6 +41,29 @@ class UserResponse(BaseSchema):
     created_at: datetime
 
 
+# ────────────────────────────── Blacklisted Plate ──────────────────────────────
+
+
+class BlacklistedPlateCreate(BaseModel):
+    plate_number: str
+    reason: Optional[str] = None
+
+
+class BlacklistedPlateUpdate(BaseModel):
+    reason: Optional[str] = None
+
+
+class BlacklistedPlateResponse(BaseSchema):
+    id: int
+    plate_number: str
+    reason: Optional[str] = None
+    created_by: Optional[int] = None
+    created_at: datetime
+
+
+# ────────────────────────────── Detection ──────────────────────────────
+
+
 class DetectionCreate(BaseModel):
     plate_number: str
     confidence: float = Field(..., ge=0, le=1)
@@ -65,6 +88,26 @@ class DetectionResponse(BaseSchema):
     vehicle_type: Optional[str] = None
     is_blacklisted: bool
     created_at: datetime
+
+
+class DetectionSearchParams(BaseModel):
+    plate_number: Optional[str] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    is_blacklisted: Optional[bool] = None
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)
+
+
+class PaginatedDetectionResponse(BaseModel):
+    items: list[DetectionResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+# ────────────────────────────── Video ──────────────────────────────
 
 
 class VideoUploadResponse(BaseSchema):
