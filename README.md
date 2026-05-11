@@ -135,6 +135,13 @@ Mở trình duyệt: **http://localhost:5173**
    - ✅ **Thành công:** Hiển thị biển số + confidence score
    - ❌ **Thất bại:** Hiển thị thông báo lỗi
 
+### 3.5. Realtime video detection
+
+1. Vào `/dashboard`
+2. Upload video hoặc GIF
+3. Backend sẽ xử lý từng frame bằng hai model ONNX và gửi frame đã vẽ bbox qua WebSocket
+4. Kết quả detection được lưu vào `video_detections`
+
 ---
 
 ## 🛠️ 4. API Endpoints
@@ -175,6 +182,8 @@ Các model pre-trained được đặt tại `src/models/`:
 |------|-------|
 | `LP_detector_nano_61.pt` | YOLOv5 detector — phát hiện vùng biển số trên ảnh |
 | `LP_ocr_nano_62.pt` | YOLOv5 OCR — nhận diện ký tự từ vùng biển số đã crop |
+| `LP_detector_nano_61.onnx` | ONNX Runtime detector dùng khi chạy backend |
+| `LP_ocr_nano_62.onnx` | ONNX Runtime OCR dùng khi chạy backend |
 
 > **Lưu ý:** Các model này được train riêng cho bài toán nhận diện biển số, không phải model COCO mặc định.
 
@@ -193,6 +202,13 @@ python scripts/pt_to_onnx.py --weights src/models/LP_detector_nano_61.pt --imgsz
 ```
 
 File `.onnx` sẽ được tạo cùng thư mục với file `.pt`.
+
+Backend mặc định dùng hai file ONNX này. Có thể đổi đường dẫn bằng:
+
+```bash
+LPR_DETECTOR_MODEL_PATH=src/models/LP_detector_nano_61.onnx
+LPR_OCR_MODEL_PATH=src/models/LP_ocr_nano_62.onnx
+```
 
 ---
 

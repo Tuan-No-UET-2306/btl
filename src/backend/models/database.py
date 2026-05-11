@@ -81,6 +81,37 @@ def _ensure_video_schema(inspector) -> None:
         )
 
 
+def _ensure_video_detection_schema(inspector) -> None:
+    """Ensure video_detections has all columns used by realtime video processing."""
+    if "video_detections" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("video_detections")}
+
+    with engine.begin() as connection:
+        if "frame_number" not in columns:
+            connection.execute(text("ALTER TABLE video_detections ADD COLUMN frame_number INTEGER"))
+            logger.info("Added video_detections.frame_number column")
+
+        if "timestamp_seconds" not in columns:
+            connection.execute(text("ALTER TABLE video_detections ADD COLUMN timestamp_seconds DOUBLE PRECISION"))
+            logger.info("Added video_detections.timestamp_seconds column")
+
+        if "image_url" not in columns:
+            connection.execute(text("ALTER TABLE video_detections ADD COLUMN image_url VARCHAR(512)"))
+            logger.info("Added video_detections.image_url column")
+
+        if "is_blacklisted" not in columns:
+            connection.execute(text("ALTER TABLE video_detections ADD COLUMN is_blacklisted BOOLEAN DEFAULT FALSE"))
+            connection.execute(text("UPDATE video_detections SET is_blacklisted = FALSE WHERE is_blacklisted IS NULL"))
+            logger.info("Added video_detections.is_blacklisted column")
+
+        if "created_at" not in columns:
+            connection.execute(text("ALTER TABLE video_detections ADD COLUMN created_at TIMESTAMPTZ DEFAULT now()"))
+            connection.execute(text("UPDATE video_detections SET created_at = now() WHERE created_at IS NULL"))
+            logger.info("Added video_detections.created_at column")
+
+
 def _ensure_blacklist_schema(inspector) -> None:
     """Ensure blacklisted_plates table exists."""
     if "blacklisted_plates" in inspector.get_table_names():
@@ -148,5 +179,6 @@ def ensure_schema() -> None:
     inspector = inspect(engine)
     _ensure_user_schema(inspector)
     _ensure_video_schema(inspector)
+    _ensure_video_detection_schema(inspector)
     _ensure_blacklist_schema(inspector)
     _ensure_detection_history_schema(inspector)

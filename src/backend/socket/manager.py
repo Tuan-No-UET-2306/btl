@@ -8,8 +8,10 @@ class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: Set[WebSocket] = set()
         self.video_connections: Dict[int, Set[WebSocket]] = {}
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     async def connect(self, websocket: WebSocket, video_id: int | None = None) -> None:
+        self.loop = asyncio.get_running_loop()
         await websocket.accept()
         if video_id is None:
             self.active_connections.add(websocket)
@@ -52,6 +54,9 @@ class ConnectionManager:
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            if self.loop and self.loop.is_running():
+                asyncio.run_coroutine_threadsafe(self._broadcast(payload, video_id), self.loop)
+                return
             asyncio.run(self._broadcast(payload, video_id))
             return
         loop.create_task(self._broadcast(payload, video_id))

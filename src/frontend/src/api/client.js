@@ -1,6 +1,9 @@
 import { getToken } from "../utils/auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const WS_BASE = API_BASE.replace(/^http/i, (match) =>
+  match.toLowerCase() === "https" ? "wss" : "ws"
+);
 
 const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE}${path}`, options);
@@ -142,6 +145,9 @@ export const videoApi = {
     });
   },
 };
+
+export const videoSocketUrl = (videoId) =>
+  `${WS_BASE}/api/v1/ws/videos/${videoId}`;
 
 export const blacklistApi = {
   list: () =>

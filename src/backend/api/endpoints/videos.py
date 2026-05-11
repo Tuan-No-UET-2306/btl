@@ -93,11 +93,6 @@ def queue_video(
         user_id=current_user.id,
     )
 
-    # Dispatch Celery task (fallback to BackgroundTasks if Celery unavailable)
-    try:
-        from ...tasks.celery_app import app as celery_app
-        process_video_task.delay(video_id=video.id)
-    except Exception:
-        background_tasks.add_task(process_video_task.run_sync, video_id=video.id)
+    background_tasks.add_task(process_video_task.run_sync, video_id=video.id)
 
     return {"message": "queued", "video_id": video.id}
