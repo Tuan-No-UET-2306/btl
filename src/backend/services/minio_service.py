@@ -1,3 +1,5 @@
+import io
+import json
 from datetime import timedelta
 import logging
 import os
@@ -32,16 +34,37 @@ class MinioService:
         try:
             if not self.client.bucket_exists(MINIO_BUCKET):
                 self.client.make_bucket(MINIO_BUCKET)
+            if MINIO_PUBLIC_READ:
+                self._set_public_policy()
         except Exception as exc:
             logger.warning("MinIO bucket setup skipped: %s", exc)
 
-    def build_object_name(self, filename: str) -> str:
+    def _set_public_policy(self) -> None:
+        """Set bucket policy to allow public read access."""
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "*"},
+                    "Action": ["s3:GetObject"],
+                    "Resource": [f"arn:aws:s3:::{MINIO_BUCKET}/*"],
+                }
+            ],
+        }
+        try:
+            self.client.set_bucket_policy(MINIO_BUCKET, json.dumps(policy))
+            logger.info("Set public read policy for bucket '%s'", MINIO_BUCKET)
+        except Exception as e:
+            logger.warning("Failed to set bucket public policy: %s", e)
+
+    def build_object_name(self, prefix: str, filename: str) -> str:
         suffix = Path(filename).suffix or ".bin"
-        return f"videos/{uuid4().hex}{suffix}"
+        return f"{prefix}/{uuid4().hex}{suffix}"
 
     def upload_file(self, upload_file, object_name: str | None = None) -> str:
         if object_name is None:
-            object_name = self.build_object_name(upload_file.filename or "upload.bin")
+            object_name = self.build_object_name("videos", upload_file.filename or "upload.bin")
 
         file_data = upload_file.file
         file_data.seek(0, os.SEEK_END)
@@ -54,6 +77,18 @@ class MinioService:
             object_name,
             file_data,
             length=size,
+            content_type=content_type,
+        )
+        return self.get_object_url(object_name)
+
+    def upload_bytes(self, data: bytes, filename: str = "image.jpg", content_type: str = "image/jpeg") -> str:
+        """Upload raw bytes to MinIO (for LPR images)."""
+        object_name = self.build_object_name("images", filename)
+        self.client.put_object(
+            MINIO_BUCKET,
+            object_name,
+            io.BytesIO(data),
+            length=len(data),
             content_type=content_type,
         )
         return self.get_object_url(object_name)

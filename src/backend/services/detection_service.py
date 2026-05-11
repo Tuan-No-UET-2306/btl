@@ -114,6 +114,7 @@ class DetectionService:
     def save_lpr_results(
         self,
         plates: list[dict],
+        image_url: str | None = None,
     ) -> list[DetectionHistory]:
         """Save multiple LPR recognition results and broadcast events."""
         saved = []
@@ -122,7 +123,7 @@ class DetectionService:
                 detection = self.detection_repo.create(
                     plate_number=plate["plate_number"],
                     confidence=plate.get("confidence", 0.0),
-                    image_url=None,
+                    image_url=image_url,
                     vehicle_type=None,
                     is_blacklisted=False,
                 )
