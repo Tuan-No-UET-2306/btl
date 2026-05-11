@@ -107,8 +107,46 @@ def _ensure_blacklist_schema(inspector) -> None:
         logger.info("Created blacklisted_plates table")
 
 
+def _ensure_detection_history_schema(inspector) -> None:
+    """Ensure detection_histories has all columns used by history/search APIs."""
+    if "detection_histories" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("detection_histories")}
+
+    with engine.begin() as connection:
+        if "vehicle_type" not in columns:
+            connection.execute(text("ALTER TABLE detection_histories ADD COLUMN vehicle_type VARCHAR(32)"))
+            logger.info("Added detection_histories.vehicle_type column")
+
+        if "image_url" not in columns:
+            connection.execute(text("ALTER TABLE detection_histories ADD COLUMN image_url VARCHAR(512)"))
+            logger.info("Added detection_histories.image_url column")
+
+        if "is_blacklisted" not in columns:
+            connection.execute(
+                text("ALTER TABLE detection_histories ADD COLUMN is_blacklisted BOOLEAN DEFAULT FALSE")
+            )
+            connection.execute(
+                text("UPDATE detection_histories SET is_blacklisted = FALSE WHERE is_blacklisted IS NULL")
+            )
+            logger.info("Added detection_histories.is_blacklisted column")
+
+        if "created_at" not in columns:
+            if "timestamp" in columns:
+                connection.execute(text("ALTER TABLE detection_histories RENAME COLUMN timestamp TO created_at"))
+                logger.info("Renamed detection_histories.timestamp column to created_at")
+            else:
+                connection.execute(
+                    text("ALTER TABLE detection_histories ADD COLUMN created_at TIMESTAMPTZ DEFAULT now()")
+                )
+                connection.execute(text("UPDATE detection_histories SET created_at = now() WHERE created_at IS NULL"))
+                logger.info("Added detection_histories.created_at column")
+
+
 def ensure_schema() -> None:
     inspector = inspect(engine)
     _ensure_user_schema(inspector)
     _ensure_video_schema(inspector)
     _ensure_blacklist_schema(inspector)
+    _ensure_detection_history_schema(inspector)

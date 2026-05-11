@@ -178,6 +178,22 @@ Các model pre-trained được đặt tại `src/models/`:
 
 > **Lưu ý:** Các model này được train riêng cho bài toán nhận diện biển số, không phải model COCO mặc định.
 
+### Chuyển `.pt` sang ONNX
+
+Chuyển cả hai model LPR mặc định:
+
+```bash
+python scripts/pt_to_onnx.py
+```
+
+Chuyển một file `.pt` bất kỳ:
+
+```bash
+python scripts/pt_to_onnx.py --weights src/models/LP_detector_nano_61.pt --imgsz 640 640
+```
+
+File `.onnx` sẽ được tạo cùng thư mục với file `.pt`.
+
 ---
 
 ## 🐳 6. Docker Compose Services
@@ -186,3 +202,9 @@ Các model pre-trained được đặt tại `src/models/`:
 |---------|------|-------|
 | PostgreSQL | `5433` (host) → `5432` (container) | Database |
 | MinIO | `9000` (API) + `9001` (Console) | Object storage |
+
+Khi chạy backend trực tiếp trên máy host, `DATABASE_URL` phải dùng port host `5433`, ví dụ:
+
+```bash
+DATABASE_URL=postgresql+psycopg2://postgres:khongmk@localhost:5433/postgres
+```
