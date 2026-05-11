@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, func
 
 from .database import Base
 
@@ -11,6 +11,20 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(32), nullable=False, default="user")
     is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class BlacklistedPlate(Base):
+    __tablename__ = "blacklisted_plates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    plate_number = Column(String(32), unique=True, nullable=False, index=True)
+    reason = Column(Text, nullable=True)
+    created_by = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

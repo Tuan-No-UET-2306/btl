@@ -11,8 +11,14 @@ export default function Sidebar() {
         <NavLink to="/dashboard" className={navLinkClass} end>
           Dashboard
         </NavLink>
+        <NavLink to="/lpr" className={navLinkClass}>
+          LPR Recognition
+        </NavLink>
         <NavLink to="/history" className={navLinkClass}>
           History
+        </NavLink>
+        <NavLink to="/blacklist" className={navLinkClass}>
+          Blacklist
         </NavLink>
       </nav>
     </aside>

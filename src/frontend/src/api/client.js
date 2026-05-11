@@ -4,17 +4,52 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE}${path}`, options);
-  const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json")
-    ? await response.json()
-    : null;
 
   if (!response.ok) {
-    const message = payload?.detail || payload?.message || "Request failed.";
-    throw new Error(message);
+    try {
+      const contentType = response.headers.get("content-type") || "";
+      const payload = contentType.includes("application/json")
+        ? await response.json()
+        : null;
+      const message = payload?.detail || payload?.message || "Request failed.";
+      throw new Error(message);
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+      throw err;
+    }
   }
 
-  return payload;
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return await response.json();
+  }
+
+  return null;
+};
+
+const downloadBlob = async (path, filename) => {
+  const token = getToken();
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(`${API_BASE}${path}`, { headers });
+  if (!response.ok) {
+    throw new Error("Download failed.");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 const authHeaders = () => {
@@ -46,6 +81,44 @@ export const detectionApi = {
     request("/api/v1/detections", {
       headers: { ...authHeaders() },
     }),
+  search: (params) => {
+    const q = new URLSearchParams();
+    if (params.plate_number) q.set("plate_number", params.plate_number);
+    if (params.date_from) q.set("date_from", params.date_from);
+    if (params.date_to) q.set("date_to", params.date_to);
+    if (params.is_blacklisted !== undefined && params.is_blacklisted !== null)
+      q.set("is_blacklisted", params.is_blacklisted);
+    q.set("page", String(params.page || 1));
+    q.set("page_size", String(params.page_size || 20));
+    return request(`/api/v1/detections/search?${q.toString()}`, {
+      headers: { ...authHeaders() },
+    });
+  },
+  exportCsv: (params) => {
+    const q = new URLSearchParams();
+    if (params.plate_number) q.set("plate_number", params.plate_number);
+    if (params.date_from) q.set("date_from", params.date_from);
+    if (params.date_to) q.set("date_to", params.date_to);
+    if (params.is_blacklisted !== undefined && params.is_blacklisted !== null)
+      q.set("is_blacklisted", params.is_blacklisted);
+    const qs = q.toString();
+    downloadBlob(
+      `/api/v1/detections/export${qs ? "?" + qs : ""}`,
+      `detections_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+  },
+};
+
+export const lprApi = {
+  recognize: (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/v1/lpr/recognize", {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: formData,
+    });
+  },
 };
 
 export const videoApi = {
@@ -68,4 +141,28 @@ export const videoApi = {
       body: formData,
     });
   },
+};
+
+export const blacklistApi = {
+  list: () =>
+    request("/api/v1/blacklist", {
+      headers: { ...authHeaders() },
+    }),
+  create: (data) =>
+    request("/api/v1/blacklist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    }),
+  update: (id, data) =>
+    request(`/api/v1/blacklist/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(data),
+    }),
+  delete: (id) =>
+    request(`/api/v1/blacklist/${id}`, {
+      method: "DELETE",
+      headers: { ...authHeaders() },
+    }),
 };
