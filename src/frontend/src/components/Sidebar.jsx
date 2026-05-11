@@ -20,6 +20,9 @@ export default function Sidebar() {
         <NavLink to="/blacklist" className={navLinkClass}>
           Blacklist
         </NavLink>
+        <NavLink to="/webcam" className={navLinkClass}>
+          Webcam
+        </NavLink>
       </nav>
     </aside>
   );

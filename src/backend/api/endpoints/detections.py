@@ -6,6 +6,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from ..dependencies import get_current_user, get_db
 from ...models.models import User
 from ...models.schemas import (
@@ -15,6 +17,10 @@ from ...models.schemas import (
     PaginatedDetectionResponse,
 )
 from ...services.detection_service import DetectionService
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
 
 router = APIRouter()
 
@@ -135,6 +141,28 @@ def update_detection(
         vehicle_type=payload.vehicle_type,
         is_blacklisted=payload.is_blacklisted,
     )
+
+
+@router.get("/stats")
+def get_detection_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return dashboard statistics."""
+    service = DetectionService(db)
+    return service.get_stats()
+
+
+@router.post("/bulk-delete", status_code=status.HTTP_200_OK)
+def bulk_delete_detections(
+    payload: BulkDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete multiple detections by IDs."""
+    service = DetectionService(db)
+    deleted = service.delete_detections_bulk(payload.ids)
+    return {"deleted": deleted, "success": True}
 
 
 @router.delete("/{detection_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -103,6 +103,14 @@ class DetectionService:
             {"event": "detection_deleted", "detection_id": detection_id}
         )
 
+    def delete_detections_bulk(self, ids: list[int]) -> int:
+        """Delete multiple detections by IDs. Returns number deleted."""
+        return self.detection_repo.delete_by_ids(ids)
+
+    def get_stats(self) -> dict:
+        """Return dashboard statistics."""
+        return self.detection_repo.get_stats()
+
     def save_lpr_results(
         self,
         plates: list[dict],

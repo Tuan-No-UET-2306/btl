@@ -107,6 +107,16 @@ export const detectionApi = {
       `detections_${new Date().toISOString().slice(0, 10)}.csv`
     );
   },
+  stats: () =>
+    request("/api/v1/detections/stats", {
+      headers: { ...authHeaders() },
+    }),
+  bulkDelete: (ids) =>
+    request("/api/v1/detections/bulk-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ ids }),
+    }),
 };
 
 export const lprApi = {

@@ -18,6 +18,10 @@ export default function History() {
   const [dateTo, setDateTo] = useState("");
   const [blacklistFilter, setBlacklistFilter] = useState("");
 
+  // Bulk delete
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -33,6 +37,7 @@ export default function History() {
       setDetections(result.items || []);
       setTotal(result.total || 0);
       setTotalPages(result.total_pages || 0);
+      setSelectedIds([]);
     } catch (err) {
       setError(err.message || "Failed to load history.");
       setDetections([]);
@@ -66,6 +71,37 @@ export default function History() {
     if (dateTo) params.date_to = new Date(dateTo).toISOString();
     if (blacklistFilter !== "") params.is_blacklisted = blacklistFilter === "true";
     detectionApi.exportCsv(params);
+  };
+
+  // Bulk delete handlers
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === detections.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(detections.map((d) => d.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.length} detection(s)? This cannot be undone.`)) return;
+
+    setDeleting(true);
+    try {
+      await detectionApi.bulkDelete(selectedIds);
+      setSelectedIds([]);
+      fetchData();
+    } catch (err) {
+      setError(err.message || "Bulk delete failed.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -119,6 +155,26 @@ export default function History() {
         </button>
       </form>
 
+      {/* Bulk delete toolbar */}
+      {selectedIds.length > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-bar-info">{selectedIds.length} selected</span>
+          <button
+            className="btn"
+            onClick={handleBulkDelete}
+            disabled={deleting}
+            style={{
+              background: "rgba(255,60,60,0.2)",
+              color: "#ff6b6b",
+              padding: "6px 14px",
+              fontSize: 12,
+            }}
+          >
+            {deleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="empty-state">Loading history...</div>
       ) : error ? (
@@ -131,6 +187,13 @@ export default function History() {
             <table className="table">
               <thead>
                 <tr>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.length === detections.length && detections.length > 0}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th>Plate</th>
                   <th>Confidence</th>
                   <th>Vehicle</th>
@@ -140,7 +203,17 @@ export default function History() {
               </thead>
               <tbody>
                 {detections.map((item) => (
-                  <tr key={item.id}>
+                  <tr
+                    key={item.id}
+                    className={selectedIds.includes(item.id) ? "row-selected" : ""}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(item.id)}
+                        onChange={() => toggleSelect(item.id)}
+                      />
+                    </td>
                     <td>{item.plate_number}</td>
                     <td>{formatConfidence(item.confidence)}</td>
                     <td>{item.vehicle_type || "-"}</td>

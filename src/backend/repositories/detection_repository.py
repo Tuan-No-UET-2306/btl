@@ -98,3 +98,65 @@ class DetectionRepository:
     def delete(self, detection: DetectionHistory) -> None:
         self.db.delete(detection)
         self.db.commit()
+
+    def delete_by_ids(self, ids: list[int]) -> int:
+        """Delete multiple detections by IDs. Returns number of deleted rows."""
+        result = self.db.query(DetectionHistory).filter(DetectionHistory.id.in_(ids)).delete(synchronize_session=False)
+        self.db.commit()
+        return result
+
+    def get_stats(self) -> dict:
+        """Return dashboard statistics."""
+        from datetime import datetime, timedelta
+
+        now = datetime.utcnow()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = today_start - timedelta(days=7)
+
+        total = self.db.query(func.count(DetectionHistory.id)).scalar() or 0
+        today = self.db.query(func.count(DetectionHistory.id)).filter(
+            DetectionHistory.created_at >= today_start
+        ).scalar() or 0
+        this_week = self.db.query(func.count(DetectionHistory.id)).filter(
+            DetectionHistory.created_at >= week_start
+        ).scalar() or 0
+        blacklisted = self.db.query(func.count(DetectionHistory.id)).filter(
+            DetectionHistory.is_blacklisted == True
+        ).scalar() or 0
+
+        # Top 10 plates
+        top_plates = (
+            self.db.query(
+                DetectionHistory.plate_number,
+                func.count(DetectionHistory.id).label("count"),
+            )
+            .group_by(DetectionHistory.plate_number)
+            .order_by(func.count(DetectionHistory.id).desc())
+            .limit(10)
+            .all()
+        )
+
+        # Detection count per day for last 7 days
+        daily_counts = []
+        for i in range(6, -1, -1):
+            day = today_start - timedelta(days=i)
+            next_day = day + timedelta(days=1)
+            count = self.db.query(func.count(DetectionHistory.id)).filter(
+                DetectionHistory.created_at >= day,
+                DetectionHistory.created_at < next_day,
+            ).scalar() or 0
+            daily_counts.append({
+                "date": day.strftime("%Y-%m-%d"),
+                "count": count,
+            })
+
+        return {
+            "total": total,
+            "today": today,
+            "this_week": this_week,
+            "blacklisted": blacklisted,
+            "top_plates": [
+                {"plate_number": p[0], "count": p[1]} for p in top_plates
+            ],
+            "daily_counts": daily_counts,
+        }
