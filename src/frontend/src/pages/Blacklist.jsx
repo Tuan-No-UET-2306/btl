@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-
 import { blacklistApi } from "../api/client";
+import { Ban, Plus, Pencil, Trash2, AlertCircle } from "lucide-react";
 
 export default function Blacklist() {
   const [items, setItems] = useState([]);
@@ -77,22 +77,36 @@ export default function Blacklist() {
   return (
     <section className="panel">
       <div className="panel-head">
-        <span>Blacklist Management</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Ban size={14} /> Blacklist Management
+        </span>
         <span className="subtle">Manage blacklisted license plates</span>
       </div>
 
       <div style={{ padding: "0 0 16px 0" }}>
-        <button className="btn btn-cool" onClick={openCreate}>
-          + Add to Blacklist
+        <button className="btn btn-cool" onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Plus size={16} /> Add to Blacklist
         </button>
       </div>
 
       {loading ? (
-        <div className="empty-state">Loading blacklist...</div>
+        <div style={{ display: "grid", gap: 12, padding: 12 }}>
+          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40 }} />
+        </div>
       ) : error ? (
-        <div className="empty-state">{error}</div>
+        <div className="empty-state">
+          <AlertCircle size={32} />
+          <span>{error}</span>
+        </div>
       ) : items.length === 0 ? (
-        <div className="empty-state">No blacklisted plates yet.</div>
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Ban size={32} />
+          </div>
+          <span>No blacklisted plates yet.</span>
+        </div>
       ) : (
         <div className="table-wrap">
           <table className="table">
@@ -113,7 +127,7 @@ export default function Blacklist() {
                   </td>
                   <td>{item.reason || "-"}</td>
                   <td>{item.created_by || "-"}</td>
-                  <td>{new Date(item.created_at).toLocaleString()}</td>
+                  <td style={{ fontSize: 12, color: "var(--muted)" }}>{new Date(item.created_at).toLocaleString()}</td>
                   <td>
                     <button
                       className="btn btn-sm"
@@ -121,20 +135,26 @@ export default function Blacklist() {
                         background: "rgba(255,255,255,0.08)",
                         color: "#eef3ff",
                         marginRight: 8,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                       onClick={() => openEdit(item)}
                     >
-                      Edit
+                      <Pencil size={12} /> Edit
                     </button>
                     <button
                       className="btn btn-sm"
                       style={{
                         background: "rgba(255,60,60,0.2)",
                         color: "#ff6b6b",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                       onClick={() => handleDelete(item.id)}
                     >
-                      Remove
+                      <Trash2 size={12} /> Remove
                     </button>
                   </td>
                 </tr>
@@ -149,7 +169,10 @@ export default function Blacklist() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <span>{editId ? "Edit Blacklist Entry" : "Add to Blacklist"}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {editId ? <Pencil size={14} /> : <Plus size={14} />}
+                {editId ? "Edit Blacklist Entry" : "Add to Blacklist"}
+              </span>
               <button className="modal-close" onClick={() => setShowModal(false)}>
                 &times;
               </button>
@@ -157,7 +180,7 @@ export default function Blacklist() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {formError && (
-                  <div className="form-error" style={{ color: "#ff6b6b", marginBottom: 12 }}>
+                  <div className="form-error" style={{ color: "#ff6b6b", marginBottom: 12, fontSize: 13 }}>
                     {formError}
                   </div>
                 )}
@@ -191,7 +214,8 @@ export default function Blacklist() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-cool">
+                <button type="submit" className="btn btn-cool" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {editId ? <Pencil size={14} /> : <Plus size={14} />}
                   {editId ? "Update" : "Add"}
                 </button>
               </div>

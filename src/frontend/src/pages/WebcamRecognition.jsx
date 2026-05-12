@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import { lprApi } from "../api/client";
+import { Camera, CameraOff, ScanLine, Play, Square, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
 export default function WebcamRecognition() {
   const videoRef = useRef(null);
@@ -110,7 +110,7 @@ export default function WebcamRecognition() {
       setAutoMode(false);
     } else {
       setAutoMode(true);
-      handleCapture(); // capture immediately
+      handleCapture();
       autoTimerRef.current = setInterval(() => {
         handleCapture();
       }, interval);
@@ -121,27 +121,30 @@ export default function WebcamRecognition() {
     <section className="dashboard-body">
       <div className="panel" style={{ minHeight: "auto" }}>
         <div className="panel-head">
-          <span>Webcam Recognition</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Camera size={14} /> Webcam Recognition
+          </span>
           <span className="subtle">Real-time LPR from laptop camera</span>
         </div>
 
         {/* Controls */}
         <div className="webcam-controls">
           {!cameraOn ? (
-            <button className="btn btn-cool" onClick={startCamera}>
-              Open Camera
+            <button className="btn btn-cool" onClick={startCamera} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Camera size={16} /> Open Camera
             </button>
           ) : (
             <>
-              <button className="btn btn-cool" onClick={handleCapture} disabled={loading}>
-                {loading ? "Recognizing..." : "Capture & Recognize"}
+              <button className="btn btn-cool" onClick={handleCapture} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <ScanLine size={16} /> {loading ? "Recognizing..." : "Capture & Recognize"}
               </button>
               <button
                 className={`btn ${autoMode ? "btn-primary" : ""}`}
                 onClick={toggleAutoMode}
                 disabled={loading}
-                style={autoMode ? {} : { background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
+                style={autoMode ? { display: "flex", alignItems: "center", gap: 6 } : { background: "rgba(255,255,255,0.08)", color: "#eef3ff", display: "flex", alignItems: "center", gap: 6 }}
               >
+                {autoMode ? <Square size={14} /> : <Play size={14} />}
                 {autoMode ? "Stop Auto" : "Auto Capture"}
               </button>
               {autoMode && (
@@ -158,16 +161,21 @@ export default function WebcamRecognition() {
               <button
                 className="btn"
                 onClick={stopCamera}
-                style={{ background: "rgba(255,60,60,0.2)", color: "#ff6b6b" }}
+                style={{ background: "rgba(255,60,60,0.2)", color: "#ff6b6b", display: "flex", alignItems: "center", gap: 6 }}
               >
-                Close Camera
+                <CameraOff size={16} /> Close Camera
               </button>
             </>
           )}
         </div>
 
         {/* Error */}
-        {error && <div className="empty-state" style={{ color: "#ff6b6b" }}>{error}</div>}
+        {error && (
+          <div className="empty-state" style={{ color: "#ff6b6b" }}>
+            <AlertCircle size={24} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Video + Canvas */}
         <div className="webcam-view">
@@ -181,7 +189,9 @@ export default function WebcamRecognition() {
           <canvas ref={canvasRef} style={{ display: "none" }} />
           {!cameraOn && !error && (
             <div className="webcam-placeholder">
-              <div className="webcam-placeholder-icon">📷</div>
+              <div className="webcam-placeholder-icon">
+                <Camera size={48} />
+              </div>
               <div>Click "Open Camera" to start</div>
             </div>
           )}
@@ -193,7 +203,9 @@ export default function WebcamRecognition() {
             {result.success && result.plates && result.plates.length > 0 ? (
               result.plates.map((plate, idx) => (
                 <div key={idx} className="lpr-result success">
-                  <div className="lpr-result-icon">✓</div>
+                  <div className="lpr-result-icon">
+                    <CheckCircle size={24} />
+                  </div>
                   <div className="lpr-result-body">
                     <div className="lpr-plate-number">{plate.plate_number}</div>
                     <div className="lpr-confidence">
@@ -206,7 +218,9 @@ export default function WebcamRecognition() {
               ))
             ) : (
               <div className="lpr-result error">
-                <div className="lpr-result-icon">✕</div>
+                <div className="lpr-result-icon">
+                  <XCircle size={24} />
+                </div>
                 <div className="lpr-result-body">
                   <div className="lpr-error-text">{result.error || "No plate detected"}</div>
                 </div>

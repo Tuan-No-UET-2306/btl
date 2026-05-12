@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-
 import { detectionApi } from "../api/client";
+import { Search, RotateCcw, Download, Trash2, AlertCircle, Table } from "lucide-react";
 
 const formatConfidence = (value) => `${Math.round(value * 100)}%`;
 
@@ -73,7 +73,6 @@ export default function History() {
     detectionApi.exportCsv(params);
   };
 
-  // Bulk delete handlers
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
@@ -104,21 +103,29 @@ export default function History() {
     }
   };
 
+  const hasActiveFilters = plateSearch || dateFrom || dateTo || blacklistFilter;
+
   return (
     <section className="panel">
       <div className="panel-head">
-        <span>Detection history</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Table size={14} /> Detection history
+        </span>
         <span className="subtle">Latest plate events</span>
       </div>
 
       {/* Search & Filter Bar */}
       <form className="history-filters" onSubmit={handleSearch}>
-        <input
-          type="text"
-          placeholder="Search plate number..."
-          value={plateSearch}
-          onChange={(e) => setPlateSearch(e.target.value)}
-        />
+        <div style={{ position: "relative", flex: "0 1 auto", minWidth: 140 }}>
+          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", pointerEvents: "none" }} />
+          <input
+            type="text"
+            placeholder="Search plate number..."
+            value={plateSearch}
+            onChange={(e) => setPlateSearch(e.target.value)}
+            style={{ paddingLeft: 30, width: "100%" }}
+          />
+        </div>
         <input
           type="date"
           value={dateFrom}
@@ -139,21 +146,28 @@ export default function History() {
           <option value="true">Blacklisted</option>
           <option value="false">Not blacklisted</option>
         </select>
-        <button className="btn btn-cool" type="submit">
-          Search
+        <button className="btn btn-cool" type="submit" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Search size={14} /> Search
         </button>
-        <button className="btn" type="button" onClick={handleReset}>
-          Reset
+        <button className="btn" type="button" onClick={handleReset} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}>
+          <RotateCcw size={14} /> Reset
         </button>
         <button
           className="btn"
           type="button"
           onClick={handleExport}
-          style={{ marginLeft: "auto", background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
+          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
         >
-          Export CSV
+          <Download size={14} /> Export CSV
         </button>
       </form>
+
+      {/* Active filters indicator */}
+      {hasActiveFilters && (
+        <div style={{ padding: "0 0 10px 0", fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+          <AlertCircle size={12} /> Filters active
+        </div>
+      )}
 
       {/* Bulk delete toolbar */}
       {selectedIds.length > 0 && (
@@ -168,19 +182,35 @@ export default function History() {
               color: "#ff6b6b",
               padding: "6px 14px",
               fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
-            {deleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
+            <Trash2 size={14} /> {deleting ? "Deleting..." : `Delete (${selectedIds.length})`}
           </button>
         </div>
       )}
 
       {loading ? (
-        <div className="empty-state">Loading history...</div>
+        <div style={{ display: "grid", gap: 12, padding: 12 }}>
+          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40 }} />
+        </div>
       ) : error ? (
-        <div className="empty-state">{error}</div>
+        <div className="empty-state">
+          <AlertCircle size={32} />
+          <span>{error}</span>
+        </div>
       ) : detections.length === 0 ? (
-        <div className="empty-state">No detections recorded yet.</div>
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Table size={32} />
+          </div>
+          <span>No detections recorded yet.</span>
+        </div>
       ) : (
         <>
           <div className="table-wrap">
@@ -214,11 +244,11 @@ export default function History() {
                         onChange={() => toggleSelect(item.id)}
                       />
                     </td>
-                    <td>{item.plate_number}</td>
-                    <td>{formatConfidence(item.confidence)}</td>
+                    <td><strong>{item.plate_number}</strong></td>
+                    <td><span className="status-badge info">{formatConfidence(item.confidence)}</span></td>
                     <td>{item.vehicle_type || "-"}</td>
-                    <td>{item.is_blacklisted ? "Yes" : "No"}</td>
-                    <td>{new Date(item.created_at).toLocaleString()}</td>
+                    <td>{item.is_blacklisted ? <span className="status-badge error">Yes</span> : <span className="status-badge success">No</span>}</td>
+                    <td style={{ fontSize: 12, color: "var(--muted)" }}>{new Date(item.created_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-
 import { authApi } from "../api/client";
+import { UserPlus, Shield, Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -12,6 +12,8 @@ export default function Register() {
   });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -32,6 +34,11 @@ export default function Register() {
       return;
     }
 
+    if (form.password.length < 6) {
+      setMessage("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
     try {
       await authApi.register({ username: form.username, password: form.password });
@@ -48,9 +55,13 @@ export default function Register() {
       <section className="card">
         <div className="card-head">
           <span className="eyebrow">Get started</span>
-          <span className="badge">LPR</span>
+          <span className="badge">
+            <Shield size={10} style={{ marginRight: 4 }} /> LPR
+          </span>
         </div>
-        <h1>Create account</h1>
+        <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <UserPlus size={22} style={{ color: "var(--accent)" }} /> Create account
+        </h1>
         <p className="muted">Set up a new operator profile for the LPR platform.</p>
 
         <form className="form" onSubmit={handleSubmit}>
@@ -67,39 +78,81 @@ export default function Register() {
           </div>
           <div className="field">
             <label htmlFor="register-password">Password</label>
-            <input
-              id="register-password"
-              name="password"
-              type="password"
-              placeholder="Create a password"
-              value={form.password}
-              onChange={handleChange}
-              autoComplete="new-password"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                id="register-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                value={form.password}
+                onChange={handleChange}
+                autoComplete="new-password"
+                style={{ paddingRight: 36 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  padding: 4,
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           <div className="field">
             <label htmlFor="register-confirm">Confirm password</label>
-            <input
-              id="register-confirm"
-              name="confirm"
-              type="password"
-              placeholder="Repeat the password"
-              value={form.confirm}
-              onChange={handleChange}
-              autoComplete="new-password"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                id="register-confirm"
+                name="confirm"
+                type={showConfirm ? "text" : "password"}
+                placeholder="Repeat the password"
+                value={form.confirm}
+                onChange={handleChange}
+                autoComplete="new-password"
+                style={{ paddingRight: 36 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  padding: 4,
+                }}
+                tabIndex={-1}
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           <div className={`message ${message ? "" : "muted"}`}>
             {message || " "}
           </div>
-          <button className="btn btn-cool" type="submit" disabled={loading}>
+          <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create account"}
           </button>
         </form>
 
         <div className="form-footer">
           <span>Already have an account?</span>
-          <Link to="/">Sign in</Link>
+          <Link to="/" style={{ color: "var(--accent-2)" }}>Sign in</Link>
         </div>
       </section>
     </main>

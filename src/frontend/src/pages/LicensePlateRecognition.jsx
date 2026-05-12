@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-
 import { lprApi } from "../api/client";
+import { ScanLine, Upload, Trash2, CheckCircle, XCircle } from "lucide-react";
 
 export default function LicensePlateRecognition() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -50,7 +50,6 @@ export default function LicensePlateRecognition() {
 
     try {
       const data = await lprApi.recognize(selectedFile);
-      console.log("LPR result:", data);
       setResult(data);
 
       if (data.success && data.plates && data.plates.length > 0) {
@@ -84,10 +83,10 @@ export default function LicensePlateRecognition() {
     <section className="dashboard-body">
       <div className="panel lpr-panel">
         <div className="panel-head">
-          <span>License Plate Recognition</span>
-          <span className="subtle">
-            Supports multi-line & multiple plates
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <ScanLine size={14} /> License Plate Recognition
           </span>
+          <span className="subtle">Supports multi-line & multiple plates</span>
         </div>
 
         <form className="upload-form" onSubmit={handleRecognize}>
@@ -109,8 +108,9 @@ export default function LicensePlateRecognition() {
               className="btn btn-cool"
               type="submit"
               disabled={loading || !selectedFile}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
             >
-              {loading ? "Recognizing..." : "Recognize"}
+              <ScanLine size={16} /> {loading ? "Recognizing..." : "Recognize"}
             </button>
             {result && (
               <button
@@ -120,9 +120,12 @@ export default function LicensePlateRecognition() {
                 style={{
                   background: "rgba(255,255,255,0.08)",
                   color: "#eef3ff",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
-                Clear
+                <Trash2 size={14} /> Clear
               </button>
             )}
           </div>
@@ -144,7 +147,9 @@ export default function LicensePlateRecognition() {
               {result.success && result.plates && result.plates.length > 0 ? (
                 result.plates.map((plate, idx) => (
                   <div key={idx} className="lpr-result success">
-                    <div className="lpr-result-icon">✓</div>
+                    <div className="lpr-result-icon">
+                      <CheckCircle size={24} />
+                    </div>
                     <div className="lpr-result-body">
                       <div className="lpr-plate-number">{plate.plate_number}</div>
                       <div className="lpr-confidence">
@@ -162,7 +167,9 @@ export default function LicensePlateRecognition() {
                 ))
               ) : (
                 <div className="lpr-result error">
-                  <div className="lpr-result-icon">✕</div>
+                  <div className="lpr-result-icon">
+                    <XCircle size={24} />
+                  </div>
                   <div className="lpr-result-body">
                     <div className="lpr-error-text">
                       {result.error || "No plate detected"}
