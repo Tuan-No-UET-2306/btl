@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, ScanLine, History, Ban, Camera, Shield } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 const navLinkClass = ({ isActive }) =>
   isActive ? "nav-link active" : "nav-link";
@@ -32,10 +33,11 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div style={{ marginTop: "auto", padding: "0 8px" }}>
+      <div className="sidebar-footer">
         <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.3em", textTransform: "uppercase" }}>
           LPR v1.0
         </div>
+        <ThemeToggle />
       </div>
     </aside>
   );

@@ -2,7 +2,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { authApi } from "../api/client";
 import { setAuth } from "../utils/auth";
-import { LogIn, Shield, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { LogIn, Shield, Eye, EyeOff, CheckCircle, User, Lock } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,7 +19,6 @@ export default function Login() {
     if (location.state?.registered) {
       setMessage("Account created successfully! Please sign in.");
       setMessageType("success");
-      // Clear the state so refresh doesn't show it again
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -60,16 +60,27 @@ export default function Login() {
   };
 
   return (
-    <main className="page auth-page">
-      <section className="card">
+    <main className="page auth-page" style={{ position: "relative" }}>
+      {/* Floating animated orbs */}
+      <div className="floating-orbs">
+        <div className="floating-orb" />
+        <div className="floating-orb" />
+        <div className="floating-orb" />
+      </div>
+
+      <section className="card" style={{ position: "relative", zIndex: 1 }}>
         <div className="card-head">
           <span className="eyebrow">Welcome back</span>
-          <span className="badge">
-            <Shield size={10} style={{ marginRight: 4 }} /> LPR
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <ThemeToggle />
+            <span className="badge">
+              <Shield size={10} /> LPR
+            </span>
+          </div>
         </div>
+
         <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LogIn size={22} style={{ color: "var(--accent-2)" }} /> Login
+          <LogIn size={24} style={{ color: "var(--accent-2)" }} /> Login
         </h1>
         <p className="muted">Sign in to manage detections and camera streams.</p>
 
@@ -98,18 +109,28 @@ export default function Login() {
         <form className="form" onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="login-username">Username</label>
-            <input
-              id="login-username"
-              name="username"
-              placeholder="Your username"
-              value={form.username}
-              onChange={handleChange}
-              autoComplete="username"
-            />
+            <div className="input-wrapper">
+              <span className="input-icon">
+                <User size={16} />
+              </span>
+              <input
+                id="login-username"
+                name="username"
+                placeholder="Your username"
+                value={form.username}
+                onChange={handleChange}
+                autoComplete="username"
+                style={{ paddingLeft: 36 }}
+              />
+            </div>
           </div>
+
           <div className="field">
             <label htmlFor="login-password">Password</label>
-            <div style={{ position: "relative" }}>
+            <div className="input-wrapper">
+              <span className="input-icon">
+                <Lock size={16} />
+              </span>
               <input
                 id="login-password"
                 name="password"
@@ -118,7 +139,7 @@ export default function Login() {
                 value={form.password}
                 onChange={handleChange}
                 autoComplete="current-password"
-                style={{ paddingRight: 36 }}
+                style={{ paddingLeft: 36, paddingRight: 36 }}
               />
               <button
                 type="button"
@@ -133,6 +154,8 @@ export default function Login() {
                   color: "var(--muted)",
                   cursor: "pointer",
                   padding: 4,
+                  display: "flex",
+                  alignItems: "center",
                 }}
                 tabIndex={-1}
               >
@@ -141,33 +164,42 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Success message (green) */}
+          {/* Success message */}
           {messageType === "success" && (
             <div style={{ fontSize: 12, color: "#2ed573", display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
               <CheckCircle size={14} /> {message}
             </div>
           )}
 
-          {/* Error message (red) */}
+          {/* Error message */}
           {messageType === "error" && (
             <div style={{ fontSize: 12, color: "#ff6b6b", minHeight: 16 }}>
               {message}
             </div>
           )}
 
-          {/* Placeholder when no message */}
+          {/* Placeholder */}
           {messageType === "muted" && (
             <div className="message muted"> </div>
           )}
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ padding: "12px 16px" }}>
+            {loading ? (
+              <>
+                <span className="spinner" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <LogIn size={16} /> Sign in
+              </>
+            )}
           </button>
         </form>
 
         <div className="form-footer">
           <span>New here?</span>
-          <Link to="/register" style={{ color: "var(--accent-2)" }}>Create an account</Link>
+          <Link to="/register" style={{ color: "var(--accent-2)", fontWeight: 600 }}>Create an account</Link>
         </div>
       </section>
     </main>
