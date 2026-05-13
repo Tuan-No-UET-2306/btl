@@ -79,11 +79,15 @@ def recognize_plate(
         except Exception as e:
             logger.warning("Failed to upload image to MinIO: %s", e)
 
-        # Save detected plates to history with image_url
+        # Save detected plates to history with image_url (scoped to current user)
         db = SessionLocal()
         try:
             detection_service = DetectionService(db)
-            detection_service.save_lpr_results(plates, image_url=image_url)
+            detection_service.save_lpr_results(
+                user_id=current_user.id,
+                plates=plates,
+                image_url=image_url,
+            )
         except Exception as e:
             logger.error("DB error saving detections: %s", e)
         finally:

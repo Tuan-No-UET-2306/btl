@@ -1,32 +1,59 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { authApi } from "../api/client";
 import { setAuth } from "../utils/auth";
-import { LogIn, Shield, Eye, EyeOff } from "lucide-react";
+import { LogIn, Shield, Eye, EyeOff, CheckCircle } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ username: "", password: "" });
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("muted"); // "muted" | "error" | "success"
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Show success message if redirected from registration
+  useEffect(() => {
+    if (location.state?.registered) {
+      setMessage("Account created successfully! Please sign in.");
+      setMessageType("success");
+      // Clear the state so refresh doesn't show it again
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (message) {
+      setMessage("");
+      setMessageType("muted");
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setMessage("");
-    setLoading(true);
 
+    if (!form.username || !form.password) {
+      setMessage("Please enter both username and password.");
+      setMessageType("error");
+      return;
+    }
+
+    setLoading(true);
     try {
       const payload = await authApi.login(form);
       setAuth(payload.access_token, payload.role, payload.username);
       navigate("/dashboard");
     } catch (error) {
-      setMessage(error.message || "Login failed.");
+      if (error.status === 401) {
+        setMessage("Invalid username or password. Please try again.");
+      } else {
+        setMessage(error.message || "Login failed. Please try again.");
+      }
+      setMessageType("error");
     } finally {
       setLoading(false);
     }
@@ -113,9 +140,26 @@ export default function Login() {
               </button>
             </div>
           </div>
-          <div className={`message ${message ? "" : "muted"}`}>
-            {message || " "}
-          </div>
+
+          {/* Success message (green) */}
+          {messageType === "success" && (
+            <div style={{ fontSize: 12, color: "#2ed573", display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+              <CheckCircle size={14} /> {message}
+            </div>
+          )}
+
+          {/* Error message (red) */}
+          {messageType === "error" && (
+            <div style={{ fontSize: 12, color: "#ff6b6b", minHeight: 16 }}>
+              {message}
+            </div>
+          )}
+
+          {/* Placeholder when no message */}
+          {messageType === "muted" && (
+            <div className="message muted"> </div>
+          )}
+
           <button className="btn btn-primary" type="submit" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </button>

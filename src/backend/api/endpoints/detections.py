@@ -31,7 +31,7 @@ def list_detections(
     current_user: User = Depends(get_current_user),
 ):
     service = DetectionService(db)
-    return service.list_detections()
+    return service.list_detections(user_id=current_user.id)
 
 
 @router.get("/search", response_model=PaginatedDetectionResponse)
@@ -45,9 +45,10 @@ def search_detections(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Search detections with filters and pagination."""
+    """Search detections with filters and pagination, scoped to current user."""
     service = DetectionService(db)
     items, total = service.search_detections(
+        user_id=current_user.id,
         plate_number=plate_number,
         date_from=date_from,
         date_to=date_to,
@@ -73,9 +74,10 @@ def export_detections_csv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Export detections to CSV file."""
+    """Export detections to CSV file, scoped to current user."""
     service = DetectionService(db)
     items, _ = service.search_detections(
+        user_id=current_user.id,
         plate_number=plate_number,
         date_from=date_from,
         date_to=date_to,
@@ -117,6 +119,7 @@ def create_detection(
 ):
     service = DetectionService(db)
     return service.create_detection(
+        user_id=current_user.id,
         plate_number=payload.plate_number,
         confidence=payload.confidence,
         image_url=payload.image_url,
@@ -135,6 +138,7 @@ def update_detection(
     service = DetectionService(db)
     return service.update_detection(
         detection_id=detection_id,
+        user_id=current_user.id,
         plate_number=payload.plate_number,
         confidence=payload.confidence,
         image_url=payload.image_url,
@@ -148,9 +152,9 @@ def get_detection_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Return dashboard statistics."""
+    """Return dashboard statistics for the current user."""
     service = DetectionService(db)
-    return service.get_stats()
+    return service.get_stats(user_id=current_user.id)
 
 
 @router.post("/bulk-delete", status_code=status.HTTP_200_OK)
@@ -159,9 +163,9 @@ def bulk_delete_detections(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Delete multiple detections by IDs."""
+    """Delete multiple detections by IDs, scoped to current user."""
     service = DetectionService(db)
-    deleted = service.delete_detections_bulk(payload.ids)
+    deleted = service.delete_detections_bulk(payload.ids, user_id=current_user.id)
     return {"deleted": deleted, "success": True}
 
 
@@ -172,5 +176,5 @@ def delete_detection(
     current_user: User = Depends(get_current_user),
 ):
     service = DetectionService(db)
-    service.delete_detection(detection_id)
+    service.delete_detection(detection_id, user_id=current_user.id)
     return None

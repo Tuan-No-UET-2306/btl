@@ -82,6 +82,7 @@ class DetectionUpdate(BaseModel):
 
 class DetectionResponse(BaseSchema):
     id: int
+    user_id: int
     plate_number: str
     confidence: float
     image_url: Optional[str] = None

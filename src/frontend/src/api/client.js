@@ -2,6 +2,16 @@ import { getToken } from "../utils/auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
+class ApiError extends Error {
+  constructor(message, code, status, errors) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.status = status;
+    this.errors = errors;
+  }
+}
+
 const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE}${path}`, options);
 
@@ -11,11 +21,17 @@ const request = async (path, options = {}) => {
       const payload = contentType.includes("application/json")
         ? await response.json()
         : null;
-      const message = payload?.detail || payload?.message || "Request failed.";
-      throw new Error(message);
+
+      // Standardized error response: { success: false, code: "...", message: "...", errors: [...] }
+      const message = payload?.message || payload?.detail || "Request failed.";
+      const code = payload?.code || "unknown_error";
+      const errors = payload?.errors || null;
+
+      throw new ApiError(message, code, response.status, errors);
     } catch (err) {
+      if (err instanceof ApiError) throw err;
       if (err instanceof SyntaxError) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw new ApiError(`Request failed with status ${response.status}`, "http_error", response.status);
       }
       throw err;
     }
@@ -39,7 +55,7 @@ const downloadBlob = async (path, filename) => {
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   const response = await fetch(`${API_BASE}${path}`, { headers });
   if (!response.ok) {
-    throw new Error("Download failed.");
+    throw new ApiError("Download failed.", "download_error", response.status);
   }
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);

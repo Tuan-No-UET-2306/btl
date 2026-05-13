@@ -1,7 +1,7 @@
 """
 Detection repository — encapsulates all DetectionHistory model database operations.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import func
@@ -16,14 +16,24 @@ class DetectionRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def find_by_id(self, detection_id: int) -> Optional[DetectionHistory]:
-        return self.db.query(DetectionHistory).filter(DetectionHistory.id == detection_id).first()
+    def find_by_id(self, detection_id: int, user_id: int) -> Optional[DetectionHistory]:
+        return (
+            self.db.query(DetectionHistory)
+            .filter(DetectionHistory.id == detection_id, DetectionHistory.user_id == user_id)
+            .first()
+        )
 
-    def find_all(self) -> list[DetectionHistory]:
-        return self.db.query(DetectionHistory).order_by(DetectionHistory.id.desc()).all()
+    def find_all(self, user_id: int) -> list[DetectionHistory]:
+        return (
+            self.db.query(DetectionHistory)
+            .filter(DetectionHistory.user_id == user_id)
+            .order_by(DetectionHistory.id.desc())
+            .all()
+        )
 
     def search(
         self,
+        user_id: int,
         plate_number: Optional[str] = None,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
@@ -32,10 +42,10 @@ class DetectionRepository:
         page_size: int = 20,
     ) -> tuple[list[DetectionHistory], int]:
         """
-        Search detections with filters and pagination.
+        Search detections for a specific user with filters and pagination.
         Returns (items, total_count).
         """
-        query = self.db.query(DetectionHistory)
+        query = self.db.query(DetectionHistory).filter(DetectionHistory.user_id == user_id)
 
         if plate_number:
             query = query.filter(DetectionHistory.plate_number.ilike(f"%{plate_number}%"))
@@ -54,6 +64,7 @@ class DetectionRepository:
 
     def create(
         self,
+        user_id: int,
         plate_number: str,
         confidence: float,
         image_url: Optional[str] = None,
@@ -61,6 +72,7 @@ class DetectionRepository:
         is_blacklisted: bool = False,
     ) -> DetectionHistory:
         detection = DetectionHistory(
+            user_id=user_id,
             plate_number=plate_number,
             confidence=confidence,
             image_url=image_url,
@@ -99,52 +111,57 @@ class DetectionRepository:
         self.db.delete(detection)
         self.db.commit()
 
-    def delete_by_ids(self, ids: list[int]) -> int:
-        """Delete multiple detections by IDs. Returns number of deleted rows."""
-        result = self.db.query(DetectionHistory).filter(DetectionHistory.id.in_(ids)).delete(synchronize_session=False)
+    def delete_by_ids(self, ids: list[int], user_id: int) -> int:
+        """Delete multiple detections by IDs, scoped to user. Returns number of deleted rows."""
+        result = (
+            self.db.query(DetectionHistory)
+            .filter(DetectionHistory.id.in_(ids), DetectionHistory.user_id == user_id)
+            .delete(synchronize_session=False)
+        )
         self.db.commit()
         return result
 
-    def get_stats(self) -> dict:
-        """Return dashboard statistics."""
-        from datetime import datetime, timedelta
-
+    def get_stats(self, user_id: int) -> dict:
+        """Return dashboard statistics for a specific user."""
         now = datetime.utcnow()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         week_start = today_start - timedelta(days=7)
 
-        total = self.db.query(func.count(DetectionHistory.id)).scalar() or 0
-        today = self.db.query(func.count(DetectionHistory.id)).filter(
-            DetectionHistory.created_at >= today_start
-        ).scalar() or 0
-        this_week = self.db.query(func.count(DetectionHistory.id)).filter(
-            DetectionHistory.created_at >= week_start
-        ).scalar() or 0
-        blacklisted = self.db.query(func.count(DetectionHistory.id)).filter(
-            DetectionHistory.is_blacklisted == True
-        ).scalar() or 0
+        base_query = self.db.query(DetectionHistory).filter(DetectionHistory.user_id == user_id)
 
-        # Top 10 plates
+        total = base_query.count()
+        today = base_query.filter(DetectionHistory.created_at >= today_start).count()
+        this_week = base_query.filter(DetectionHistory.created_at >= week_start).count()
+        blacklisted = base_query.filter(DetectionHistory.is_blacklisted == True).count()
+
+        # Top 10 plates for this user
         top_plates = (
             self.db.query(
                 DetectionHistory.plate_number,
                 func.count(DetectionHistory.id).label("count"),
             )
+            .filter(DetectionHistory.user_id == user_id)
             .group_by(DetectionHistory.plate_number)
             .order_by(func.count(DetectionHistory.id).desc())
             .limit(10)
             .all()
         )
 
-        # Detection count per day for last 7 days
+        # Detection count per day for last 7 days for this user
         daily_counts = []
         for i in range(6, -1, -1):
             day = today_start - timedelta(days=i)
             next_day = day + timedelta(days=1)
-            count = self.db.query(func.count(DetectionHistory.id)).filter(
-                DetectionHistory.created_at >= day,
-                DetectionHistory.created_at < next_day,
-            ).scalar() or 0
+            count = (
+                self.db.query(func.count(DetectionHistory.id))
+                .filter(
+                    DetectionHistory.user_id == user_id,
+                    DetectionHistory.created_at >= day,
+                    DetectionHistory.created_at < next_day,
+                )
+                .scalar()
+                or 0
+            )
             daily_counts.append({
                 "date": day.strftime("%Y-%m-%d"),
                 "count": count,
