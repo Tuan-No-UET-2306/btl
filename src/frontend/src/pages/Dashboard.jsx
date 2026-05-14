@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { detectionApi, videoApi } from "../api/client";
-import { Activity, AlertTriangle, BarChart3, Video, Eye, Upload } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Video, Eye } from "lucide-react";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -13,24 +13,6 @@ export default function Dashboard() {
     daily_counts: [],
   });
   const [recentVideos, setRecentVideos] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadMessage, setUploadMessage] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const formatBytes = (size) => {
-    if (!size) return "0 B";
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    let value = size;
-    let index = 0;
-    while (value >= 1024 && index < units.length - 1) {
-      value /= 1024;
-      index += 1;
-    }
-    const precision = value >= 10 || index === 0 ? 0 : 1;
-    return `${value.toFixed(precision)} ${units[index]}`;
-  };
-
   const loadData = async (activeFlag) => {
     const [videos, detections, detStats] = await Promise.all([
       videoApi.list().catch(() => []),
@@ -59,36 +41,6 @@ export default function Dashboard() {
       activeFlag.current = false;
     };
   }, []);
-
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0] || null;
-    setSelectedFile(file);
-    setUploadMessage("");
-  };
-
-  const handleUpload = async (event) => {
-    event.preventDefault();
-    if (!selectedFile) {
-      setUploadMessage("Please choose a video file first.");
-      return;
-    }
-
-    setUploading(true);
-    setUploadMessage("");
-    try {
-      await videoApi.upload(selectedFile);
-      setUploadMessage("Upload complete. The video is queued for processing.");
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-      await loadData({ current: true });
-    } catch (error) {
-      setUploadMessage(error.message || "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const maxDailyCount = Math.max(...(stats.daily_counts?.map((d) => d.count) || [0]), 1);
 

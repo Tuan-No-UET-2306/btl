@@ -1,10 +1,8 @@
 """Video management endpoints — upload, list, detail, queue, detections."""
-from fastapi import APIRouter, Depends, File, UploadFile, status
-from kombu.exceptions import KombuError, OperationalError
+from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_current_user, get_db
-from ...core.exceptions import AppException
 from ...models.models import User
 from ...models.schemas import (
     VideoDetectionCreate,
@@ -14,7 +12,7 @@ from ...models.schemas import (
     VideoUploadResponse,
 )
 from ...services.video_service import VideoService
-from ...tasks.video_tasks import process_video_celery_task
+from ...tasks.video_tasks import process_video_task
 
 router = APIRouter()
 
@@ -85,6 +83,7 @@ def create_video_detection(
 @router.post("/{video_id}/queue")
 def queue_video(
     video_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -94,13 +93,11 @@ def queue_video(
         user_id=current_user.id,
     )
 
+    # Dispatch Celery task (fallback to BackgroundTasks if Celery unavailable)
     try:
-        task = process_video_celery_task.delay(video.id)
-    except (KombuError, OperationalError) as exc:
-        raise AppException(
-            code="queue_unavailable",
-            detail=f"Could not enqueue video processing task: {exc}",
-            status_code=503,
-        ) from exc
+        from ...tasks.celery_app import app as celery_app
+        process_video_task.delay(video_id=video.id)
+    except Exception:
+        background_tasks.add_task(process_video_task.run_sync, video_id=video.id)
 
-    return {"message": "queued", "video_id": video.id, "task_id": task.id}
+    return {"message": "queued", "video_id": video.id}

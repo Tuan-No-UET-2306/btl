@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ScanLine, History, Ban, Camera, Shield } from "lucide-react";
+import { LayoutDashboard, ScanLine, History, Ban, Camera, Video, Shield } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinkClass = ({ isActive }) =>
@@ -8,6 +8,7 @@ const navLinkClass = ({ isActive }) =>
 const links = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/lpr", label: "LPR Recognition", icon: ScanLine },
+  { to: "/video", label: "Video", icon: Video },
   { to: "/history", label: "History", icon: History },
   { to: "/blacklist", label: "Blacklist", icon: Ban },
   { to: "/webcam", label: "Webcam", icon: Camera },

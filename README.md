@@ -11,7 +11,7 @@ btl/
 │   ├── frontend/         # React + Vite frontend
 │   ├── models/           # Pre-trained models (.pt)
 │   └── yolov5/           # YOLOv5 source code
-├── docker-compose.yml    # PostgreSQL + Redis + MinIO services
+├── docker-compose.yml    # PostgreSQL + MinIO services
 ├── requirement.txt       # Python dependencies
 ├── README.md
 ```
@@ -20,7 +20,7 @@ btl/
 
 - Python ≥ 3.10
 - Node.js
-- Docker Desktop (cho PostgreSQL + Redis + MinIO)
+- Docker Desktop (cho PostgreSQL + MinIO)
 - Git
 
 ---
@@ -45,10 +45,10 @@ pip install -r requirement.txt
 > pip install bcrypt<4 psycopg2-binary
 > ```
 
-### 1.3. Khởi động PostgreSQL + Redis + MinIO (Docker)
+### 1.3. Khởi động PostgreSQL + MinIO (Docker)
 
 ```bash
-docker-compose up -d postgres redis minio
+docker-compose up -d postgres minio
 ```
 
 Kiểm tra containers đã chạy:
@@ -69,16 +69,6 @@ uvicorn src.backend.main:app --reload
 Server sẽ chạy tại: **http://localhost:8000**
 
 API docs (Swagger UI): **http://localhost:8000/docs**
-
-### 1.5. Chạy Celery worker xử lý video
-
-Mở một terminal riêng, dùng cùng Python environment với backend:
-
-```bash
-celery -A src.backend.tasks.celery_app:celery_app worker -Q video_processing --loglevel=info
-```
-
-Backend sẽ đẩy job xử lý video vào Redis queue. Celery worker lấy job từ queue và gửi realtime event về API qua Redis pub/sub để WebSocket vẫn nhận frame/progress.
 
 > **Lưu ý:** Khi chạy lần đầu, server sẽ tự động:
 > - Tạo các bảng trong PostgreSQL
@@ -145,13 +135,6 @@ Mở trình duyệt: **http://localhost:5173**
    - ✅ **Thành công:** Hiển thị biển số + confidence score
    - ❌ **Thất bại:** Hiển thị thông báo lỗi
 
-### 3.5. Realtime video detection
-
-1. Vào `/dashboard`
-2. Upload video hoặc GIF
-3. Backend sẽ xử lý từng frame bằng hai model ONNX và gửi frame đã vẽ bbox qua WebSocket
-4. Kết quả detection được lưu vào `video_detections`
-
 ---
 
 ## 🛠️ 4. API Endpoints
@@ -192,33 +175,8 @@ Các model pre-trained được đặt tại `src/models/`:
 |------|-------|
 | `LP_detector_nano_61.pt` | YOLOv5 detector — phát hiện vùng biển số trên ảnh |
 | `LP_ocr_nano_62.pt` | YOLOv5 OCR — nhận diện ký tự từ vùng biển số đã crop |
-| `LP_detector_nano_61.onnx` | ONNX Runtime detector dùng khi chạy backend |
-| `LP_ocr_nano_62.onnx` | ONNX Runtime OCR dùng khi chạy backend |
 
 > **Lưu ý:** Các model này được train riêng cho bài toán nhận diện biển số, không phải model COCO mặc định.
-
-### Chuyển `.pt` sang ONNX
-
-Chuyển cả hai model LPR mặc định:
-
-```bash
-python scripts/pt_to_onnx.py
-```
-
-Chuyển một file `.pt` bất kỳ:
-
-```bash
-python scripts/pt_to_onnx.py --weights src/models/LP_detector_nano_61.pt --imgsz 640 640
-```
-
-File `.onnx` sẽ được tạo cùng thư mục với file `.pt`.
-
-Backend mặc định dùng hai file ONNX này. Có thể đổi đường dẫn bằng:
-
-```bash
-LPR_DETECTOR_MODEL_PATH=src/models/LP_detector_nano_61.onnx
-LPR_OCR_MODEL_PATH=src/models/LP_ocr_nano_62.onnx
-```
 
 ---
 
@@ -226,12 +184,5 @@ LPR_OCR_MODEL_PATH=src/models/LP_ocr_nano_62.onnx
 
 | Service | Port | Mô tả |
 |---------|------|-------|
-| PostgreSQL | `5432` (host) → `5432` (container) | Database |
-| Redis | `6379` | Celery broker/result backend + realtime event bus |
+| PostgreSQL | `5433` (host) → `5432` (container) | Database |
 | MinIO | `9000` (API) + `9001` (Console) | Object storage |
-
-Khi chạy backend trực tiếp trên máy host, `DATABASE_URL` phải dùng port host `5432`, ví dụ:
-
-```bash
-DATABASE_URL=postgresql+psycopg2://postgres:khongmk@localhost:5432/postgres
-```

@@ -117,12 +117,12 @@ class VideoService:
         video_id: int,
         user_id: int,
     ) -> UploadedVideo:
-        """Queue a video for processing."""
+        """Queue a video for processing (status → 'processing')."""
         video = self.video_repo.find_by_id_and_user(video_id, user_id)
         if not video:
             raise NotFoundException(detail=f"Video with id '{video_id}' not found")
 
-        self.video_repo.update_status(video, "queued")
+        self.video_repo.update_status(video, "processing")
 
         manager.broadcast_event(
             {"event": "video_queued", "video_id": video.id, "status": video.status},

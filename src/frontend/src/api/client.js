@@ -1,9 +1,6 @@
 import { getToken } from "../utils/auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const WS_BASE = API_BASE.replace(/^http/i, (match) =>
-  match.toLowerCase() === "https" ? "wss" : "ws"
-);
 
 class ApiError extends Error {
   constructor(message, code, status, errors) {
@@ -155,6 +152,14 @@ export const videoApi = {
     request("/api/v1/videos", {
       headers: { ...authHeaders() },
     }),
+  detections: (videoId) =>
+    request(`/api/v1/videos/${videoId}/detections`, {
+      headers: { ...authHeaders() },
+    }),
+  detail: (videoId) =>
+    request(`/api/v1/videos/${videoId}`, {
+      headers: { ...authHeaders() },
+    }),
   queue: (videoId, data) =>
     request(`/api/v1/videos/${videoId}/queue`, {
       method: "POST",
@@ -171,9 +176,6 @@ export const videoApi = {
     });
   },
 };
-
-export const videoSocketUrl = (videoId) =>
-  `${WS_BASE}/api/v1/ws/videos/${videoId}`;
 
 export const blacklistApi = {
   list: () =>
