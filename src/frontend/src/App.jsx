@@ -5,6 +5,7 @@ import Blacklist from "./pages/Blacklist";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import LicensePlateRecognition from "./pages/LicensePlateRecognition";
+import VideoRecognition from "./pages/VideoRecognition";
 import WebcamRecognition from "./pages/WebcamRecognition";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/history" element={<History />} />
         <Route path="/lpr" element={<LicensePlateRecognition />} />
+        <Route path="/video" element={<VideoRecognition />} />
         <Route path="/blacklist" element={<Blacklist />} />
         <Route path="/webcam" element={<WebcamRecognition />} />
       </Route>
