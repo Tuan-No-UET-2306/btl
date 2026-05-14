@@ -107,41 +107,41 @@ def _ensure_blacklist_schema(inspector) -> None:
         logger.info("Created blacklisted_plates table")
 
 
-def _ensure_detection_schema(inspector) -> None:
-    """Ensure detection_histories table has user_id column."""
+def _ensure_detection_history_schema(inspector) -> None:
+    """Ensure detection_histories has all columns used by history/search APIs."""
     if "detection_histories" not in inspector.get_table_names():
         return
 
     columns = {column["name"] for column in inspector.get_columns("detection_histories")}
-    if "user_id" in columns:
-        return
 
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                "ALTER TABLE detection_histories "
-                "ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE"
-            )
-        )
-        # Set default user_id for existing records (first user)
-        first_user = connection.execute(
-            text("SELECT id FROM users ORDER BY id ASC LIMIT 1")
-        ).scalar()
-        if first_user:
+        if "vehicle_type" not in columns:
+            connection.execute(text("ALTER TABLE detection_histories ADD COLUMN vehicle_type VARCHAR(32)"))
+            logger.info("Added detection_histories.vehicle_type column")
+
+        if "image_url" not in columns:
+            connection.execute(text("ALTER TABLE detection_histories ADD COLUMN image_url VARCHAR(512)"))
+            logger.info("Added detection_histories.image_url column")
+
+        if "is_blacklisted" not in columns:
             connection.execute(
-                text("UPDATE detection_histories SET user_id = :uid WHERE user_id IS NULL"),
-                {"uid": first_user},
+                text("ALTER TABLE detection_histories ADD COLUMN is_blacklisted BOOLEAN DEFAULT FALSE")
             )
-        connection.execute(
-            text("ALTER TABLE detection_histories ALTER COLUMN user_id SET NOT NULL")
-        )
-        connection.execute(
-            text(
-                "CREATE INDEX ix_detection_histories_user_id "
-                "ON detection_histories(user_id)"
+            connection.execute(
+                text("UPDATE detection_histories SET is_blacklisted = FALSE WHERE is_blacklisted IS NULL")
             )
-        )
-        logger.info("Added user_id column to detection_histories table")
+            logger.info("Added detection_histories.is_blacklisted column")
+
+        if "created_at" not in columns:
+            if "timestamp" in columns:
+                connection.execute(text("ALTER TABLE detection_histories RENAME COLUMN timestamp TO created_at"))
+                logger.info("Renamed detection_histories.timestamp column to created_at")
+            else:
+                connection.execute(
+                    text("ALTER TABLE detection_histories ADD COLUMN created_at TIMESTAMPTZ DEFAULT now()")
+                )
+                connection.execute(text("UPDATE detection_histories SET created_at = now() WHERE created_at IS NULL"))
+                logger.info("Added detection_histories.created_at column")
 
 
 def ensure_schema() -> None:
@@ -149,4 +149,4 @@ def ensure_schema() -> None:
     _ensure_user_schema(inspector)
     _ensure_video_schema(inspector)
     _ensure_blacklist_schema(inspector)
-    _ensure_detection_schema(inspector)
+    _ensure_detection_history_schema(inspector)

@@ -33,3 +33,5 @@ services:
 volumes:
   lpr_postgres_data:
   lpr_minio_data:
+  lpr_redis_data:
+

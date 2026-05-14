@@ -177,40 +177,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="panel upload-panel">
-        <div className="panel-head">
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Upload size={14} /> Upload video
-          </span>
-          <span className="subtle">Stored in MinIO</span>
-        </div>
-        <form className="upload-form" onSubmit={handleUpload}>
-          <div className="upload-field">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*"
-              onChange={handleFileChange}
-            />
-            <div className="upload-meta">
-              {selectedFile
-                ? `${selectedFile.name} - ${formatBytes(selectedFile.size)}`
-                : "Choose a video file to upload"}
-            </div>
-          </div>
-          <button
-            className="btn btn-cool"
-            type="submit"
-            disabled={uploading || !selectedFile}
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </form>
-        <div className={`message ${uploadMessage ? "" : "muted"}`}>
-          {uploadMessage || " "}
-        </div>
-      </div>
-
       <div className="panel">
         <div className="panel-head">
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
