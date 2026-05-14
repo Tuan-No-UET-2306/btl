@@ -2,6 +2,8 @@ from datetime import timedelta
 import logging
 import os
 from pathlib import Path
+import tempfile
+from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
 from minio import Minio
@@ -67,6 +69,41 @@ class MinioService:
             object_name,
             expires=timedelta(days=7),
         )
+
+    def get_object_name_from_url(self, object_url: str) -> str:
+        parsed = urlparse(object_url)
+        path = unquote(parsed.path).lstrip("/")
+        bucket_prefix = f"{MINIO_BUCKET}/"
+        if path.startswith(bucket_prefix):
+            return path[len(bucket_prefix):]
+        if path.startswith("videos/"):
+            return path
+        raise ValueError(f"Cannot resolve MinIO object name from URL: {object_url}")
+
+    def download_url_to_temp_file(self, object_url: str) -> str:
+        object_name = self.get_object_name_from_url(object_url)
+        suffix = Path(urlparse(object_url).path).suffix or ".mp4"
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+        temp_path = temp_file.name
+        temp_file.close()
+
+        response = None
+        try:
+            response = self.client.get_object(MINIO_BUCKET, object_name)
+            with open(temp_path, "wb") as file:
+                for chunk in response.stream(1024 * 1024):
+                    file.write(chunk)
+            return temp_path
+        except Exception:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
+            raise
+        finally:
+            if response is not None:
+                response.close()
+                response.release_conn()
 
 
 minio_service = MinioService()

@@ -1,6 +1,6 @@
 """
 License Plate Recognition Service
-Uses YOLOv5-based detector model for plate detection and OCR model for text recognition.
+Uses YOLOv5 ONNX Runtime models for plate detection and OCR text recognition.
 Handles:
   - Single & multi-line plates (biển số 1 dòng / 2 dòng kiểu Việt Nam)
   - Multiple plates in one image
@@ -14,17 +14,29 @@ import numpy as np
 import torch
 from PIL import Image
 
+from ..core.config import LPR_DETECTOR_MODEL_PATH, LPR_OCR_MODEL_PATH
+
 logger = logging.getLogger(__name__)
 
 SRC_DIR = Path(__file__).resolve().parents[2]  # src/
+REPO_ROOT = SRC_DIR.parent
 MODELS_DIR = SRC_DIR / "models"
-DETECTOR_PATH = MODELS_DIR / "LP_detector_nano_61.pt"
-OCR_PATH = MODELS_DIR / "LP_ocr_nano_62.pt"
 YOLOV5_DIR = SRC_DIR / "yolov5"
 
 
+def _resolve_model_path(path: str) -> Path:
+    model_path = Path(path)
+    if model_path.is_absolute():
+        return model_path
+    return (REPO_ROOT / model_path).resolve()
+
+
+DETECTOR_PATH = _resolve_model_path(LPR_DETECTOR_MODEL_PATH)
+OCR_PATH = _resolve_model_path(LPR_OCR_MODEL_PATH)
+
+
 class LPRService:
-    """License Plate Recognition service using PyTorch models."""
+    """License Plate Recognition service using YOLOv5 ONNX models."""
 
     def __init__(self):
         self.detector = None
@@ -52,29 +64,29 @@ class LPRService:
                 logger.error("YOLOv5 source NOT FOUND at %s", YOLOV5_DIR)
                 return
 
-            logger.info("Loading detector model...")
+            logger.info("Loading detector ONNX model...")
             self.detector = torch.hub.load(
                 str(YOLOV5_DIR),
                 "custom",
                 path=str(DETECTOR_PATH),
                 source="local",
+                device=self.device,
                 force_reload=False,
             )
             self.detector.conf = 0.5
             self.detector.iou = 0.45
-            self.detector.to(self.device)
             logger.info("Detector model loaded successfully")
 
-            logger.info("Loading OCR model...")
+            logger.info("Loading OCR ONNX model...")
             self.ocr_model = torch.hub.load(
                 str(YOLOV5_DIR),
                 "custom",
                 path=str(OCR_PATH),
                 source="local",
+                device=self.device,
                 force_reload=False,
             )
             self.ocr_model.conf = 0.3
-            self.ocr_model.to(self.device)
             logger.info("OCR model loaded successfully")
 
             self._models_loaded = True
@@ -176,6 +188,19 @@ class LPRService:
             "error": str or None
         }
         """
+        try:
+            img_bgr = self._decode_image(image_bytes)
+        except Exception as e:
+            logger.error("LPR image decode error: %s", e, exc_info=True)
+            return {
+                "plates": [],
+                "success": False,
+                "error": str(e),
+            }
+        return self.predict_frame(img_bgr)
+
+    def predict_frame(self, img_bgr: np.ndarray) -> dict:
+        """Run detection + OCR on an OpenCV BGR frame."""
         if not self._models_loaded:
             return {
                 "plates": [],
@@ -184,7 +209,6 @@ class LPRService:
             }
 
         try:
-            img_bgr = self._decode_image(image_bytes)
             img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
             logger.info("Image shape: %s", img_rgb.shape)
 
