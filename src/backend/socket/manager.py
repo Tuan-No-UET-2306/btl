@@ -3,6 +3,8 @@ from typing import Dict, Set
 
 from fastapi import WebSocket
 
+from .redis_bus import redis_event_bus
+
 
 class ConnectionManager:
     def __init__(self) -> None:
@@ -50,7 +52,18 @@ class ConnectionManager:
         for websocket in stale:
             self._cleanup(websocket)
 
-    def broadcast_event(self, payload: dict, video_id: int | None = None) -> None:
+    async def broadcast_local(self, payload: dict, video_id: int | None = None) -> None:
+        await self._broadcast(payload, video_id)
+
+    def broadcast_event(
+        self,
+        payload: dict,
+        video_id: int | None = None,
+        publish: bool = False,
+    ) -> None:
+        if publish:
+            redis_event_bus.publish(payload, video_id=video_id)
+
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:

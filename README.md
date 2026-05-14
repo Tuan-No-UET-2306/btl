@@ -11,7 +11,7 @@ btl/
 │   ├── frontend/         # React + Vite frontend
 │   ├── models/           # Pre-trained models (.pt)
 │   └── yolov5/           # YOLOv5 source code
-├── docker-compose.yml    # PostgreSQL + MinIO services
+├── docker-compose.yml    # PostgreSQL + Redis + MinIO services
 ├── requirement.txt       # Python dependencies
 ├── README.md
 ```
@@ -20,7 +20,7 @@ btl/
 
 - Python ≥ 3.10
 - Node.js
-- Docker Desktop (cho PostgreSQL + MinIO)
+- Docker Desktop (cho PostgreSQL + Redis + MinIO)
 - Git
 
 ---
@@ -45,10 +45,10 @@ pip install -r requirement.txt
 > pip install bcrypt<4 psycopg2-binary
 > ```
 
-### 1.3. Khởi động PostgreSQL + MinIO (Docker)
+### 1.3. Khởi động PostgreSQL + Redis + MinIO (Docker)
 
 ```bash
-docker-compose up -d postgres minio
+docker-compose up -d postgres redis minio
 ```
 
 Kiểm tra containers đã chạy:
@@ -69,6 +69,16 @@ uvicorn src.backend.main:app --reload
 Server sẽ chạy tại: **http://localhost:8000**
 
 API docs (Swagger UI): **http://localhost:8000/docs**
+
+### 1.5. Chạy Celery worker xử lý video
+
+Mở một terminal riêng, dùng cùng Python environment với backend:
+
+```bash
+celery -A src.backend.tasks.celery_app:celery_app worker -Q video_processing --loglevel=info
+```
+
+Backend sẽ đẩy job xử lý video vào Redis queue. Celery worker lấy job từ queue và gửi realtime event về API qua Redis pub/sub để WebSocket vẫn nhận frame/progress.
 
 > **Lưu ý:** Khi chạy lần đầu, server sẽ tự động:
 > - Tạo các bảng trong PostgreSQL
@@ -216,11 +226,12 @@ LPR_OCR_MODEL_PATH=src/models/LP_ocr_nano_62.onnx
 
 | Service | Port | Mô tả |
 |---------|------|-------|
-| PostgreSQL | `5433` (host) → `5432` (container) | Database |
+| PostgreSQL | `5432` (host) → `5432` (container) | Database |
+| Redis | `6379` | Celery broker/result backend + realtime event bus |
 | MinIO | `9000` (API) + `9001` (Console) | Object storage |
 
-Khi chạy backend trực tiếp trên máy host, `DATABASE_URL` phải dùng port host `5433`, ví dụ:
+Khi chạy backend trực tiếp trên máy host, `DATABASE_URL` phải dùng port host `5432`, ví dụ:
 
 ```bash
-DATABASE_URL=postgresql+psycopg2://postgres:khongmk@localhost:5433/postgres
+DATABASE_URL=postgresql+psycopg2://postgres:khongmk@localhost:5432/postgres
 ```
