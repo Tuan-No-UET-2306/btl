@@ -7,6 +7,7 @@ from ...models.database import SessionLocal
 from ...models.models import User
 from ...services.detection_service import DetectionService
 from ...services.lpr_service import lpr_service
+from ...services.minio_service import minio_service
 from ..dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ def recognize_plate(
     Upload an image of a vehicle/license plate and get the recognized plate number(s).
     Uses YOLOv5 detector + OCR models.
     Supports: multi-line plates (biển số 2 dòng) and multiple plates in one image.
+    The original image is saved to MinIO for later reference.
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="Missing filename")
@@ -65,11 +67,27 @@ def recognize_plate(
 
         plates = result["plates"]
 
-        # Save detected plates to history via DetectionService
+        # Upload original image to MinIO
+        image_url = None
+        try:
+            image_url = minio_service.upload_bytes(
+                image_bytes,
+                filename=file.filename or "capture.jpg",
+                content_type=file.content_type or "image/jpeg",
+            )
+            logger.info("Image saved to MinIO: %s", image_url)
+        except Exception as e:
+            logger.warning("Failed to upload image to MinIO: %s", e)
+
+        # Save detected plates to history with image_url (scoped to current user)
         db = SessionLocal()
         try:
             detection_service = DetectionService(db)
-            detection_service.save_lpr_results(plates)
+            detection_service.save_lpr_results(
+                user_id=current_user.id,
+                plates=plates,
+                image_url=image_url,
+            )
         except Exception as e:
             logger.error("DB error saving detections: %s", e)
         finally:
@@ -86,6 +104,7 @@ def recognize_plate(
             "success": True,
             "plates": plates,
             "plates_count": len(plates),
+            "image_url": image_url,
             "error": None,
         }
 

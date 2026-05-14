@@ -32,6 +32,12 @@ class DetectionHistory(Base):
     __tablename__ = "detection_histories"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     plate_number = Column(String(32), nullable=False, index=True)
     vehicle_type = Column(String(32), nullable=True)
     confidence = Column(Float, nullable=False)

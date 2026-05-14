@@ -6,6 +6,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from ..dependencies import get_current_user, get_db
 from ...models.models import User
 from ...models.schemas import (
@@ -16,6 +18,10 @@ from ...models.schemas import (
 )
 from ...services.detection_service import DetectionService
 
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[int]
+
 router = APIRouter()
 
 
@@ -25,7 +31,7 @@ def list_detections(
     current_user: User = Depends(get_current_user),
 ):
     service = DetectionService(db)
-    return service.list_detections()
+    return service.list_detections(user_id=current_user.id)
 
 
 @router.get("/search", response_model=PaginatedDetectionResponse)
@@ -39,9 +45,10 @@ def search_detections(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Search detections with filters and pagination."""
+    """Search detections with filters and pagination, scoped to current user."""
     service = DetectionService(db)
     items, total = service.search_detections(
+        user_id=current_user.id,
         plate_number=plate_number,
         date_from=date_from,
         date_to=date_to,
@@ -67,9 +74,10 @@ def export_detections_csv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Export detections to CSV file."""
+    """Export detections to CSV file, scoped to current user."""
     service = DetectionService(db)
     items, _ = service.search_detections(
+        user_id=current_user.id,
         plate_number=plate_number,
         date_from=date_from,
         date_to=date_to,
@@ -111,6 +119,7 @@ def create_detection(
 ):
     service = DetectionService(db)
     return service.create_detection(
+        user_id=current_user.id,
         plate_number=payload.plate_number,
         confidence=payload.confidence,
         image_url=payload.image_url,
@@ -129,12 +138,35 @@ def update_detection(
     service = DetectionService(db)
     return service.update_detection(
         detection_id=detection_id,
+        user_id=current_user.id,
         plate_number=payload.plate_number,
         confidence=payload.confidence,
         image_url=payload.image_url,
         vehicle_type=payload.vehicle_type,
         is_blacklisted=payload.is_blacklisted,
     )
+
+
+@router.get("/stats")
+def get_detection_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return dashboard statistics for the current user."""
+    service = DetectionService(db)
+    return service.get_stats(user_id=current_user.id)
+
+
+@router.post("/bulk-delete", status_code=status.HTTP_200_OK)
+def bulk_delete_detections(
+    payload: BulkDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete multiple detections by IDs, scoped to current user."""
+    service = DetectionService(db)
+    deleted = service.delete_detections_bulk(payload.ids, user_id=current_user.id)
+    return {"deleted": deleted, "success": True}
 
 
 @router.delete("/{detection_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -144,5 +176,5 @@ def delete_detection(
     current_user: User = Depends(get_current_user),
 ):
     service = DetectionService(db)
-    service.delete_detection(detection_id)
+    service.delete_detection(detection_id, user_id=current_user.id)
     return None
