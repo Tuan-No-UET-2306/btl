@@ -11,7 +11,7 @@ btl/
 │   ├── frontend/         # React + Vite frontend
 │   ├── models/           # Pre-trained models (.pt)
 │   └── yolov5/           # YOLOv5 source code
-├── docker-compose.yml    # PostgreSQL + MinIO services
+├── docker-compose.yml    # PostgreSQL + MinIO + Redis services
 ├── requirement.txt       # Python dependencies
 ├── README.md
 ```
@@ -45,10 +45,10 @@ pip install -r requirement.txt
 > pip install bcrypt<4 psycopg2-binary
 > ```
 
-### 1.3. Khởi động PostgreSQL + MinIO (Docker)
+### 1.3. Khởi động PostgreSQL + MinIO + Redis (Docker)
 
 ```bash
-docker-compose up -d postgres minio
+docker-compose up -d postgres minio redis
 ```
 
 Kiểm tra containers đã chạy:
@@ -60,7 +60,27 @@ Bạn có thể truy cập MinIO Console tại: http://localhost:9001
 - User: `minioadmin`
 - Password: `minioadmin`
 
-### 1.4. Chạy Backend
+Redis được dùng làm Celery broker/result backend và pub/sub realtime cho WebSocket.
+
+### 1.4. Cấu hình Roboflow
+
+```bash
+export ROBOFLOW_API_KEY="your_roboflow_api_key"
+export ROBOFLOW_WORKSPACE_NAME="no-anonymous"
+export ROBOFLOW_WORKFLOW_ID="general-segmentation-api-2"
+export ROBOFLOW_CLASSES="plate"
+```
+
+Trên Windows PowerShell:
+
+```powershell
+$env:ROBOFLOW_API_KEY="your_roboflow_api_key"
+$env:ROBOFLOW_WORKSPACE_NAME="no-anonymous"
+$env:ROBOFLOW_WORKFLOW_ID="general-segmentation-api-2"
+$env:ROBOFLOW_CLASSES="plate"
+```
+
+### 1.5. Chạy Backend
 
 ```bash
 uvicorn src.backend.main:app --reload
@@ -75,6 +95,16 @@ API docs (Swagger UI): **http://localhost:8000/docs**
 > - Fix schema cũ (thêm các column còn thiếu)
 > - Tạo bucket trong MinIO
 > - Load YOLOv5 detection model + OCR model từ `src/models/`
+
+### 1.6. Chạy Celery worker xử lý video
+
+Mở terminal thứ hai, cùng môi trường Python:
+
+```bash
+celery -A src.backend.tasks.celery_app:celery_app worker --loglevel=info
+```
+
+Video upload sẽ được đưa vào Redis queue. Worker lấy từng video, gọi Roboflow workflow detect biển số theo frame, lưu detection vào database và đẩy progress realtime qua WebSocket.
 
 ---
 
@@ -149,6 +179,9 @@ Mở trình duyệt: **http://localhost:5173**
 | POST | `/api/v1/detections/upload` | Upload ảnh + YOLOv5 detection | ✅ |
 | POST | `/api/v1/videos/` | Upload video | ✅ |
 | GET | `/api/v1/videos/` | Danh sách video | ✅ |
+| POST | `/api/v1/videos/{video_id}/queue` | Đưa video vào Redis/Celery queue | ✅ |
+| GET | `/api/v1/videos/{video_id}/detections` | Danh sách detection của video | ✅ |
+| WS | `/api/v1/ws/stream` | Event realtime cho video processing | ❌ |
 
 ### Test API với curl
 
@@ -173,10 +206,10 @@ Các model pre-trained được đặt tại `src/models/`:
 
 | File | Mô tả |
 |------|-------|
-| `LP_detector_nano_61.pt` | YOLOv5 detector — phát hiện vùng biển số trên ảnh |
+| Roboflow Workflow | Detector video realtime — workspace `no-anonymous`, workflow `general-segmentation-api-2`, class `plate` |
 | `LP_ocr_nano_62.pt` | YOLOv5 OCR — nhận diện ký tự từ vùng biển số đã crop |
 
-> **Lưu ý:** Các model này được train riêng cho bài toán nhận diện biển số, không phải model COCO mặc định.
+> **Lưu ý:** Video detector dùng Roboflow Serverless Workflow. OCR vẫn dùng model local `src/models/LP_ocr_nano_62.pt` để đọc text từ crop biển số.
 
 ---
 
@@ -186,3 +219,4 @@ Các model pre-trained được đặt tại `src/models/`:
 |---------|------|-------|
 | PostgreSQL | `5433` (host) → `5432` (container) | Database |
 | MinIO | `9000` (API) + `9001` (Console) | Object storage |
+| Redis | `6379` | Queue Celery + realtime pub/sub |

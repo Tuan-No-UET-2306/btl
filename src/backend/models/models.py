@@ -76,6 +76,19 @@ class VideoDetection(Base):
     confidence = Column(Float, nullable=False)
     frame_number = Column(Integer, nullable=True)
     timestamp_seconds = Column(Float, nullable=True)
+    bbox_x1 = Column(Integer, nullable=True)
+    bbox_y1 = Column(Integer, nullable=True)
+    bbox_x2 = Column(Integer, nullable=True)
+    bbox_y2 = Column(Integer, nullable=True)
+    frame_width = Column(Integer, nullable=True)
+    frame_height = Column(Integer, nullable=True)
     image_url = Column(String(512), nullable=True)
     is_blacklisted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def bbox(self) -> list[int] | None:
+        values = (self.bbox_x1, self.bbox_y1, self.bbox_x2, self.bbox_y2)
+        if any(value is None for value in values):
+            return None
+        return [int(value) for value in values]

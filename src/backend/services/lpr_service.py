@@ -1,6 +1,6 @@
 """
 License Plate Recognition Service
-Uses YOLOv5-based detector model for plate detection and OCR model for text recognition.
+Uses YOLOv5 ONNX detector and OCR models for plate detection and text recognition.
 Handles:
   - Single & multi-line plates (biển số 1 dòng / 2 dòng kiểu Việt Nam)
   - Multiple plates in one image
@@ -14,22 +14,36 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .plate_format import normalize_license_plate
+
 logger = logging.getLogger(__name__)
 
 SRC_DIR = Path(__file__).resolve().parents[2]  # src/
 MODELS_DIR = SRC_DIR / "models"
-DETECTOR_PATH = MODELS_DIR / "LP_detector_nano_61.pt"
-OCR_PATH = MODELS_DIR / "LP_ocr_nano_62.pt"
+DETECTOR_PATH = MODELS_DIR / "LP_detector_nano_61.onnx"
+OCR_PATH = MODELS_DIR / "LP_ocr_nano_62.onnx"
 YOLOV5_DIR = SRC_DIR / "yolov5"
 
 
+def _select_onnx_device() -> str:
+    if not torch.cuda.is_available():
+        return "cpu"
+
+    try:
+        import onnxruntime
+    except ImportError:
+        return "cpu"
+
+    return "cuda" if "CUDAExecutionProvider" in onnxruntime.get_available_providers() else "cpu"
+
+
 class LPRService:
-    """License Plate Recognition service using PyTorch models."""
+    """License Plate Recognition service using local ONNX models."""
 
     def __init__(self):
         self.detector = None
         self.ocr_model = None
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = _select_onnx_device()
         self._models_loaded = False
         self._load_models()
 
@@ -59,10 +73,10 @@ class LPRService:
                 path=str(DETECTOR_PATH),
                 source="local",
                 force_reload=False,
+                device=self.device,
             )
             self.detector.conf = 0.5
             self.detector.iou = 0.45
-            self.detector.to(self.device)
             logger.info("Detector model loaded successfully")
 
             logger.info("Loading OCR model...")
@@ -72,9 +86,9 @@ class LPRService:
                 path=str(OCR_PATH),
                 source="local",
                 force_reload=False,
+                device=self.device,
             )
             self.ocr_model.conf = 0.3
-            self.ocr_model.to(self.device)
             logger.info("OCR model loaded successfully")
 
             self._models_loaded = True
@@ -153,7 +167,7 @@ class LPRService:
         if ocr_df.empty:
             return "", 0.0
 
-        plate_number = self._merge_ocr_chars(ocr_df)
+        plate_number = normalize_license_plate(self._merge_ocr_chars(ocr_df))
         ocr_conf = float(ocr_df["confidence"].mean())
 
         return plate_number, ocr_conf

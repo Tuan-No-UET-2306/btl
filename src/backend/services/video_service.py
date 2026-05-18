@@ -84,6 +84,9 @@ class VideoService:
         image_url: Optional[str] = None,
         frame_number: Optional[int] = None,
         timestamp_seconds: Optional[float] = None,
+        bbox: Optional[list[int]] = None,
+        frame_width: Optional[int] = None,
+        frame_height: Optional[int] = None,
         is_blacklisted: bool = False,
     ) -> VideoDetection:
         """Create a new detection for a video and broadcast event."""
@@ -98,6 +101,9 @@ class VideoService:
             image_url=image_url,
             frame_number=frame_number,
             timestamp_seconds=timestamp_seconds,
+            bbox=bbox,
+            frame_width=frame_width,
+            frame_height=frame_height,
             is_blacklisted=is_blacklisted,
         )
         self.video_repo.update_status(video, "done")

@@ -4,18 +4,14 @@ Provides distributed task queue for video processing and other background tasks.
 Requires a running Redis (or RabbitMQ) broker.
 """
 
-import os
-
 from celery import Celery
 
-# Redis broker URL (fallback: no broker — tasks run synchronously)
-BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-BACKEND_URL = os.getenv("CELERY_BACKEND_URL", "redis://localhost:6379/0")
+from ..core.config import CELERY_BACKEND_URL, CELERY_BROKER_URL
 
 celery_app = Celery(
     "lpr_system",
-    broker=BROKER_URL,
-    backend=BACKEND_URL,
+    broker=CELERY_BROKER_URL,
+    backend=CELERY_BACKEND_URL,
 )
 
 celery_app.conf.update(
@@ -27,7 +23,5 @@ celery_app.conf.update(
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    imports=("src.backend.tasks.video_tasks",),
 )
-
-# Auto-discover tasks from the tasks module
-celery_app.autodiscover_tasks(["src.backend.tasks"])

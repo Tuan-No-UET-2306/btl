@@ -2,6 +2,8 @@ import { getToken } from "../utils/auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
+export const getWsBase = () => API_BASE.replace(/^http/, "ws");
+
 class ApiError extends Error {
   constructor(message, code, status, errors) {
     super(message);

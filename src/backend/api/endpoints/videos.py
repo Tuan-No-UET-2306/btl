@@ -1,5 +1,5 @@
 """Video management endpoints — upload, list, detail, queue, detections."""
-from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_current_user, get_db
@@ -12,7 +12,7 @@ from ...models.schemas import (
     VideoUploadResponse,
 )
 from ...services.video_service import VideoService
-from ...tasks.video_tasks import process_video_task
+from ...tasks.video_tasks import enqueue_video_processing
 
 router = APIRouter()
 
@@ -76,6 +76,9 @@ def create_video_detection(
         image_url=payload.image_url,
         frame_number=payload.frame_number,
         timestamp_seconds=payload.timestamp_seconds,
+        bbox=payload.bbox,
+        frame_width=payload.frame_width,
+        frame_height=payload.frame_height,
         is_blacklisted=payload.is_blacklisted,
     )
 
@@ -83,7 +86,6 @@ def create_video_detection(
 @router.post("/{video_id}/queue")
 def queue_video(
     video_id: int,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -93,11 +95,13 @@ def queue_video(
         user_id=current_user.id,
     )
 
-    # Dispatch Celery task (fallback to BackgroundTasks if Celery unavailable)
     try:
-        from ...tasks.celery_app import app as celery_app
-        process_video_task.delay(video_id=video.id)
-    except Exception:
-        background_tasks.add_task(process_video_task.run_sync, video_id=video.id)
+        task_id = enqueue_video_processing(video.id)
+    except Exception as exc:
+        service.video_repo.update_status(video, "queued")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Video queue is unavailable: {str(exc)}",
+        )
 
-    return {"message": "queued", "video_id": video.id}
+    return {"message": "queued", "video_id": video.id, "task_id": task_id}
