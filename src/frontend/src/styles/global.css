@@ -812,6 +812,40 @@ textarea {
 .video-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .video-meta { font-size: 12px; color: var(--muted); }
 
+.video-status-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.video-progress {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--stroke);
+}
+
+.video-progress-fill {
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: #2ad1ff;
+  transition: width 180ms ease;
+}
+
+.video-progress-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.video-progress-text.error {
+  max-width: 240px;
+  color: #ff6b6b;
+  overflow-wrap: anywhere;
+}
+
 /* ===== Tables ===== */
 .table-wrap { overflow-x: auto; }
 
@@ -1104,6 +1138,75 @@ textarea {
 }
 
 .webcam-video { max-width: 100%; max-height: 480px; object-fit: contain; }
+
+.lpr-video-view {
+  display: block;
+  max-height: none;
+  border-radius: 8px;
+  background: #05070d;
+}
+
+.lpr-video-stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #05070d;
+}
+
+.lpr-video {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+}
+
+.lpr-video-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lpr-video-box {
+  position: absolute;
+  border: 2px solid #ff3b30;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 59, 48, 0.26);
+}
+
+.lpr-video-box.blacklisted {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 18px rgba(255, 107, 107, 0.34);
+}
+
+.lpr-video-label {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: rgba(20, 168, 74, 0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lpr-player-actions,
+.lpr-player-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lpr-player-strip {
+  margin-top: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 .webcam-placeholder {
   display: flex;

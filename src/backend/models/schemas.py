@@ -142,6 +142,9 @@ class VideoDetectionCreate(BaseModel):
     image_url: Optional[str] = None
     frame_number: Optional[int] = None
     timestamp_seconds: Optional[float] = None
+    bbox: Optional[list[int]] = Field(default=None, min_length=4, max_length=4)
+    frame_width: Optional[int] = None
+    frame_height: Optional[int] = None
     is_blacklisted: bool = False
 
 
@@ -153,6 +156,9 @@ class VideoDetectionResponse(BaseSchema):
     image_url: Optional[str] = None
     frame_number: Optional[int] = None
     timestamp_seconds: Optional[float] = None
+    bbox: Optional[list[int]] = None
+    frame_width: Optional[int] = None
+    frame_height: Optional[int] = None
     is_blacklisted: bool
     created_at: datetime
 

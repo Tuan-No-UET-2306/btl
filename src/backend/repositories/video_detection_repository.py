@@ -34,8 +34,12 @@ class VideoDetectionRepository:
         image_url: Optional[str] = None,
         frame_number: Optional[int] = None,
         timestamp_seconds: Optional[float] = None,
+        bbox: Optional[list[int]] = None,
+        frame_width: Optional[int] = None,
+        frame_height: Optional[int] = None,
         is_blacklisted: bool = False,
     ) -> VideoDetection:
+        bbox_values = bbox if bbox and len(bbox) == 4 else [None, None, None, None]
         detection = VideoDetection(
             uploaded_video_id=uploaded_video_id,
             plate_number=plate_number,
@@ -43,6 +47,12 @@ class VideoDetectionRepository:
             image_url=image_url,
             frame_number=frame_number,
             timestamp_seconds=timestamp_seconds,
+            bbox_x1=bbox_values[0],
+            bbox_y1=bbox_values[1],
+            bbox_x2=bbox_values[2],
+            bbox_y2=bbox_values[3],
+            frame_width=frame_width,
+            frame_height=frame_height,
             is_blacklisted=is_blacklisted,
         )
         self.db.add(detection)

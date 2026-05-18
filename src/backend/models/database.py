@@ -144,9 +144,34 @@ def _ensure_detection_history_schema(inspector) -> None:
                 logger.info("Added detection_histories.created_at column")
 
 
+def _ensure_video_detection_schema(inspector) -> None:
+    """Ensure video_detections has bbox metadata for video overlays."""
+    if "video_detections" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("video_detections")}
+    required_columns = {
+        "bbox_x1": "INTEGER",
+        "bbox_y1": "INTEGER",
+        "bbox_x2": "INTEGER",
+        "bbox_y2": "INTEGER",
+        "frame_width": "INTEGER",
+        "frame_height": "INTEGER",
+    }
+
+    with engine.begin() as connection:
+        for column_name, column_type in required_columns.items():
+            if column_name not in columns:
+                connection.execute(
+                    text(f"ALTER TABLE video_detections ADD COLUMN {column_name} {column_type}")
+                )
+                logger.info("Added video_detections.%s column", column_name)
+
+
 def ensure_schema() -> None:
     inspector = inspect(engine)
     _ensure_user_schema(inspector)
     _ensure_video_schema(inspector)
     _ensure_blacklist_schema(inspector)
     _ensure_detection_history_schema(inspector)
+    _ensure_video_detection_schema(inspector)
