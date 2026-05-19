@@ -33,7 +33,7 @@ export default function History() {
       if (dateTo) params.date_to = new Date(dateTo).toISOString();
       if (blacklistFilter !== "") params.is_blacklisted = blacklistFilter === "true";
 
-      const result = await detectionApi.search(params);
+      const result = await detectionApi.all(params);
       setDetections(result.items || []);
       setTotal(result.total || 0);
       setTotalPages(result.total_pages || 0);

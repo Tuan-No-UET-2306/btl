@@ -1099,6 +1099,63 @@ textarea {
 .form-group { display: grid; gap: 6px; margin-bottom: 14px; }
 .form-group label { font-size: 12px; color: var(--muted); }
 
+/* ===== Blacklist Modal (avoid DaisyUI conflict) ===== */
+.bl-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 200ms ease;
+}
+
+.bl-modal {
+  background: var(--card-solid);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  width: min(480px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  animation: rise 300ms ease;
+}
+
+.bl-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--stroke);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bl-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 200ms ease;
+}
+
+.bl-modal-close:hover { color: var(--text); }
+
+.bl-modal-body { padding: 20px; }
+
+.bl-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--stroke);
+}
+
 /* ===== Webcam ===== */
 .webcam-controls {
   display: flex;

@@ -112,6 +112,19 @@ export const detectionApi = {
       headers: { ...authHeaders() },
     });
   },
+  all: (params) => {
+    const q = new URLSearchParams();
+    if (params.plate_number) q.set("plate_number", params.plate_number);
+    if (params.date_from) q.set("date_from", params.date_from);
+    if (params.date_to) q.set("date_to", params.date_to);
+    if (params.is_blacklisted !== undefined && params.is_blacklisted !== null)
+      q.set("is_blacklisted", params.is_blacklisted);
+    q.set("page", String(params.page || 1));
+    q.set("page_size", String(params.page_size || 20));
+    return request(`/api/v1/detections/merged?${q.toString()}`, {
+      headers: { ...authHeaders() },
+    });
+  },
   exportCsv: (params) => {
     const q = new URLSearchParams();
     if (params.plate_number) q.set("plate_number", params.plate_number);
@@ -182,6 +195,10 @@ export const videoApi = {
 export const blacklistApi = {
   list: () =>
     request("/api/v1/blacklist", {
+      headers: { ...authHeaders() },
+    }),
+  check: (plateNumber) =>
+    request(`/api/v1/blacklist/check/${encodeURIComponent(plateNumber)}`, {
       headers: { ...authHeaders() },
     }),
   create: (data) =>

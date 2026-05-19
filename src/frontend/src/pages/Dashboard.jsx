@@ -23,8 +23,8 @@ export default function Dashboard() {
     if (!activeFlag.current) return;
 
     setStats({
-      videos: videos.length,
-      detections: detections.length,
+      videos: detStats?.videos_this_week ?? videos.length,
+      detections: detStats?.total ?? detections.length,
       today: detStats?.today || 0,
       this_week: detStats?.this_week || 0,
       blacklisted: detStats?.blacklisted || 0,

@@ -53,6 +53,7 @@ class BlacklistService:
     def update_blacklisted(
         self,
         blacklist_id: int,
+        plate_number: Optional[str] = None,
         reason: Optional[str] = None,
     ) -> BlacklistedPlate:
         entry = self.repo.find_by_id(blacklist_id)
@@ -60,7 +61,14 @@ class BlacklistService:
             raise NotFoundException(
                 detail=f"Blacklisted entry with id '{blacklist_id}' not found"
             )
-        return self.repo.update(entry, reason=reason)
+        # If plate_number changed, check for duplicates
+        if plate_number is not None and plate_number != entry.plate_number:
+            existing = self.repo.find_by_plate_number(plate_number)
+            if existing:
+                raise ConflictException(
+                    detail=f"Plate '{plate_number}' is already blacklisted"
+                )
+        return self.repo.update(entry, plate_number=plate_number, reason=reason)
 
     def delete_blacklisted(self, blacklist_id: int) -> None:
         entry = self.repo.find_by_id(blacklist_id)
@@ -80,6 +88,9 @@ class BlacklistService:
             VideoDetection.plate_number == plate_number
         ).update({"is_blacklisted": False})
         self.db.commit()
+
+    def find_by_plate_number(self, plate_number: str) -> Optional[BlacklistedPlate]:
+        return self.repo.find_by_plate_number(plate_number)
 
     def is_blacklisted(self, plate_number: str) -> bool:
         return self.repo.find_by_plate_number(plate_number) is not None

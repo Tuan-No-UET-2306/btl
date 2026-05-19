@@ -147,6 +147,37 @@ def update_detection(
     )
 
 
+@router.get("/merged")
+def list_all_detections(
+    plate_number: str = Query(None, description="Search by plate number (partial match)"),
+    date_from: datetime = Query(None, description="Filter from date (ISO format)"),
+    date_to: datetime = Query(None, description="Filter to date (ISO format)"),
+    is_blacklisted: bool = Query(None, description="Filter by blacklist status"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Search ALL detections (LPR + Video) with filters and pagination, scoped to current user."""
+    service = DetectionService(db)
+    items, total = service.search_all_detections(
+        user_id=current_user.id,
+        plate_number=plate_number,
+        date_from=date_from,
+        date_to=date_to,
+        is_blacklisted=is_blacklisted,
+        page=page,
+        page_size=page_size,
+    )
+    return PaginatedDetectionResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=(total + page_size - 1) // page_size if total > 0 else 0,
+    )
+
+
 @router.get("/stats")
 def get_detection_stats(
     db: Session = Depends(get_db),

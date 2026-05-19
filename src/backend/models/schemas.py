@@ -50,6 +50,7 @@ class BlacklistedPlateCreate(BaseModel):
 
 
 class BlacklistedPlateUpdate(BaseModel):
+    plate_number: Optional[str] = None
     reason: Optional[str] = None
 
 
@@ -58,6 +59,7 @@ class BlacklistedPlateResponse(BaseSchema):
     plate_number: str
     reason: Optional[str] = None
     created_by: Optional[int] = None
+    created_by_username: Optional[str] = None
     created_at: datetime
 
 

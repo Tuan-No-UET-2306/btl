@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import NotFoundException
-from ..models.models import DetectionHistory, User
+from ..models.models import DetectionHistory, UploadedVideo, User, VideoDetection
 from ..repositories.detection_repository import DetectionRepository
 from ..socket.manager import manager
 
@@ -116,6 +116,27 @@ class DetectionService:
     def get_stats(self, user_id: int) -> dict:
         """Return dashboard statistics for a specific user."""
         return self.detection_repo.get_stats(user_id=user_id)
+
+    def search_all_detections(
+        self,
+        user_id: int,
+        plate_number: Optional[str] = None,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        is_blacklisted: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[dict], int]:
+        """Search ALL detections (LPR + Video) with filters and pagination."""
+        return self.detection_repo.search_all(
+            user_id=user_id,
+            plate_number=plate_number,
+            date_from=date_from,
+            date_to=date_to,
+            is_blacklisted=is_blacklisted,
+            page=page,
+            page_size=page_size,
+        )
 
     def save_lpr_results(
         self,

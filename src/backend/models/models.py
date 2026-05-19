@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
@@ -13,6 +14,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    blacklisted_plates = relationship("BlacklistedPlate", back_populates="creator", lazy="dynamic")
+
 
 class BlacklistedPlate(Base):
     __tablename__ = "blacklisted_plates"
@@ -26,6 +29,12 @@ class BlacklistedPlate(Base):
         nullable=True,
     )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    creator = relationship("User", back_populates="blacklisted_plates")
+
+    @property
+    def created_by_username(self) -> str | None:
+        return self.creator.username if self.creator else None
 
 
 class DetectionHistory(Base):
