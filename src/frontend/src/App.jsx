@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import AppLayout from "./layouts/AppLayout";
 import Blacklist from "./pages/Blacklist";
+import UsersManagement from "./pages/UsersManagement";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import LicensePlateRecognition from "./pages/LicensePlateRecognition";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/video" element={<VideoRecognition />} />
         <Route path="/blacklist" element={<Blacklist />} />
         <Route path="/webcam" element={<WebcamRecognition />} />
+        <Route path="/users" element={<UsersManagement />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

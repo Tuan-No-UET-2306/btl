@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from ..dependencies import get_current_user, get_db
+from ..dependencies import get_current_user, get_db, require_admin
 from ...models.models import User
 from ...models.schemas import UserCreate, UserResponse, UserUpdate
 from ...services.user_service import UserService
@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/", response_model=list[UserResponse])
 def list_users(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),
 ):
     service = UserService(db)
     return service.list_users()
@@ -23,7 +23,7 @@ def list_users(
 def create_user(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),
 ):
     service = UserService(db)
     return service.create_user(
@@ -38,7 +38,7 @@ def update_user(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),
 ):
     service = UserService(db)
     return service.update_user(
@@ -54,7 +54,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    admin: User = Depends(require_admin),
 ):
     service = UserService(db)
     service.delete_user(user_id)

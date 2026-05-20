@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { blacklistApi } from "../api/client";
+import { getCachedProfile } from "../utils/auth";
 import { Ban, Plus, Pencil, Trash2, AlertCircle } from "lucide-react";
 
 export default function Blacklist() {
@@ -74,6 +75,9 @@ export default function Blacklist() {
     }
   };
 
+  const { role } = getCachedProfile();
+  const isAdmin = role === "admin";
+
   return (
     <section className="panel">
       <div className="panel-head">
@@ -83,11 +87,18 @@ export default function Blacklist() {
         <span className="subtle">Manage blacklisted license plates</span>
       </div>
 
-      <div style={{ padding: "0 0 16px 0" }}>
-        <button className="btn btn-cool" onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Plus size={16} /> Add to Blacklist
-        </button>
-      </div>
+      {isAdmin && (
+        <div style={{ padding: "0 0 16px 0" }}>
+          <button className="btn btn-cool" onClick={openCreate} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={16} /> Add to Blacklist
+          </button>
+        </div>
+      )}
+      {!isAdmin && (
+        <div style={{ padding: "0 0 12px 0", fontSize: 12, color: "var(--muted)" }}>
+          Viewing blacklist — only admins can add or remove entries.
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: "grid", gap: 12, padding: 12 }}>
@@ -116,7 +127,7 @@ export default function Blacklist() {
                 <th>Reason</th>
                 <th>Added By</th>
                 <th>Added At</th>
-                <th>Actions</th>
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -128,35 +139,37 @@ export default function Blacklist() {
                   <td>{item.reason || "-"}</td>
                   <td>{item.created_by || "-"}</td>
                   <td style={{ fontSize: 12, color: "var(--muted)" }}>{new Date(item.created_at).toLocaleString()}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm"
-                      style={{
-                        background: "rgba(255,255,255,0.08)",
-                        color: "#eef3ff",
-                        marginRight: 8,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                      onClick={() => openEdit(item)}
-                    >
-                      <Pencil size={12} /> Edit
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      style={{
-                        background: "rgba(255,60,60,0.2)",
-                        color: "#ff6b6b",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 size={12} /> Remove
-                    </button>
-                  </td>
+                  {isAdmin && (
+                    <td>
+                      <button
+                        className="btn btn-sm"
+                        style={{
+                          background: "rgba(255,255,255,0.08)",
+                          color: "#eef3ff",
+                          marginRight: 8,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                        onClick={() => openEdit(item)}
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button
+                        className="btn btn-sm"
+                        style={{
+                          background: "rgba(255,60,60,0.2)",
+                          color: "#ff6b6b",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -166,19 +179,19 @@ export default function Blacklist() {
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-head">
+        <div className="bl-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="bl-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="bl-modal-head">
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 {editId ? <Pencil size={14} /> : <Plus size={14} />}
                 {editId ? "Edit Blacklist Entry" : "Add to Blacklist"}
               </span>
-              <button className="modal-close" onClick={() => setShowModal(false)}>
+              <button className="bl-modal-close" onClick={() => setShowModal(false)}>
                 &times;
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="modal-body">
+              <div className="bl-modal-body">
                 {formError && (
                   <div className="form-error" style={{ color: "#ff6b6b", marginBottom: 12, fontSize: 13 }}>
                     {formError}
@@ -205,7 +218,7 @@ export default function Blacklist() {
                   />
                 </div>
               </div>
-              <div className="modal-footer">
+              <div className="bl-modal-footer">
                 <button
                   type="button"
                   className="btn"
