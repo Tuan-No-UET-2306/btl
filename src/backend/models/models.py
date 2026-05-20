@@ -57,6 +57,7 @@ class UploadedVideo(Base):
         index=True,
     )
     video_url = Column(String(500), nullable=False)
+    processed_video_url = Column(String(500), nullable=True)
     filename = Column(String(255), nullable=True)
     status = Column(String(20), nullable=True, default="queued")
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

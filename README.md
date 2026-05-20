@@ -11,7 +11,7 @@ btl/
 │   ├── frontend/         # React + Vite frontend
 │   ├── models/           # Pre-trained models (.pt)
 │   └── yolov5/           # YOLOv5 source code
-├── docker-compose.yml    # PostgreSQL + MinIO + Redis services
+├── docker-compose.yml    # MinIO + Redis services, optional local PostgreSQL
 ├── requirement.txt       # Python dependencies
 ├── README.md
 ```
@@ -20,7 +20,7 @@ btl/
 
 - Python ≥ 3.10
 - Node.js
-- Docker Desktop (cho PostgreSQL + MinIO)
+- Docker Desktop (cho MinIO + Redis)
 - Git
 
 ---
@@ -45,10 +45,26 @@ pip install -r requirement.txt
 > pip install bcrypt<4 psycopg2-binary
 > ```
 
-### 1.3. Khởi động PostgreSQL + MinIO + Redis (Docker)
+### 1.3. Cấu hình database Supabase dùng chung
+
+Copy file môi trường mẫu:
 
 ```bash
-docker-compose up -d postgres minio redis
+cp .env.example .env
+```
+
+Mở file `.env` và thay `DATABASE_URL` bằng connection string Supabase của nhóm:
+
+```env
+DATABASE_URL=postgresql://postgres:YOUR_SUPABASE_PASSWORD@db.vyfyqfpsmpjuqieuzlab.supabase.co:5432/postgres?sslmode=require
+```
+
+File `.env` là cấu hình riêng của từng máy và không được commit lên Git.
+
+### 1.4. Khởi động MinIO + Redis (Docker)
+
+```bash
+docker-compose up -d minio redis
 ```
 
 Kiểm tra containers đã chạy:
@@ -62,25 +78,27 @@ Bạn có thể truy cập MinIO Console tại: http://localhost:9001
 
 Redis được dùng làm Celery broker/result backend và pub/sub realtime cho WebSocket.
 
-### 1.4. Cấu hình Roboflow
+Nếu cần chạy PostgreSQL local để test riêng, dùng:
 
 ```bash
-export ROBOFLOW_API_KEY="your_roboflow_api_key"
-export ROBOFLOW_WORKSPACE_NAME="no-anonymous"
-export ROBOFLOW_WORKFLOW_ID="general-segmentation-api-2"
-export ROBOFLOW_CLASSES="plate"
+docker-compose --profile local-db up -d postgres
+```
+
+### 1.5. Cấu hình model local
+
+```bash
+export VIDEO_DETECT_MODEL_PATH="src/models/LP_detector_nano_61.onnx"
+export VIDEO_OCR_MODEL_PATH="src/models/LP_ocr_nano_62.onnx"
 ```
 
 Trên Windows PowerShell:
 
 ```powershell
-$env:ROBOFLOW_API_KEY="your_roboflow_api_key"
-$env:ROBOFLOW_WORKSPACE_NAME="no-anonymous"
-$env:ROBOFLOW_WORKFLOW_ID="general-segmentation-api-2"
-$env:ROBOFLOW_CLASSES="plate"
+$env:VIDEO_DETECT_MODEL_PATH="src/models/LP_detector_nano_61.onnx"
+$env:VIDEO_OCR_MODEL_PATH="src/models/LP_ocr_nano_62.onnx"
 ```
 
-### 1.5. Chạy Backend
+### 1.6. Chạy Backend
 
 ```bash
 uvicorn src.backend.main:app --reload
@@ -91,12 +109,13 @@ Server sẽ chạy tại: **http://localhost:8000**
 API docs (Swagger UI): **http://localhost:8000/docs**
 
 > **Lưu ý:** Khi chạy lần đầu, server sẽ tự động:
-> - Tạo các bảng trong PostgreSQL
+> - Kết nối tới database Supabase trong `DATABASE_URL`
+> - Tạo các bảng còn thiếu trong PostgreSQL
 > - Fix schema cũ (thêm các column còn thiếu)
 > - Tạo bucket trong MinIO
 > - Load YOLOv5 detection model + OCR model từ `src/models/`
 
-### 1.6. Chạy Celery worker xử lý video
+### 1.7. Chạy Celery worker xử lý video
 
 Mở terminal thứ hai, cùng môi trường Python:
 
@@ -104,7 +123,7 @@ Mở terminal thứ hai, cùng môi trường Python:
 celery -A src.backend.tasks.celery_app:celery_app worker --loglevel=info
 ```
 
-Video upload sẽ được đưa vào Redis queue. Worker lấy từng video, gọi Roboflow workflow detect biển số theo frame, lưu detection vào database và đẩy progress realtime qua WebSocket.
+Video upload sẽ được đưa vào Redis queue. Worker lấy từng video, dùng model local `LP_detector_nano_61.onnx` để detect biển số theo frame, lưu detection vào database và đẩy progress realtime qua WebSocket.
 
 ---
 
@@ -154,6 +173,7 @@ Mở trình duyệt: **http://localhost:5173**
 |-------|-----------|
 | `/dashboard` | Dashboard tổng quan, upload video |
 | `/lpr` | **LPR Recognition** — Upload ảnh xe → detect + nhận diện biển số |
+| `/video` | **Video Detection** — chạy realtime detection trên video |
 | `/history` | Lịch sử các detection đã thực hiện |
 
 ### 3.4. Sử dụng LPR Recognition
@@ -164,6 +184,46 @@ Mở trình duyệt: **http://localhost:5173**
 4. Chờ kết quả:
    - ✅ **Thành công:** Hiển thị biển số + confidence score
    - ❌ **Thất bại:** Hiển thị thông báo lỗi
+
+### 3.5. Detect video bằng model local
+
+Nếu chỉ muốn chạy giống demo detection trên video và xuất ra file đã vẽ bbox:
+
+```bash
+python scripts/detect_video.py --source path/to/video.mp4
+```
+
+Mặc định script dùng model detector local:
+
+```bash
+src/models/LP_detector_nano_61.onnx
+```
+
+Đổi model của bạn bằng `--weights`:
+
+```bash
+python scripts/detect_video.py \
+  --source path/to/video.mp4 \
+  --weights src/models/LP_detector_nano_61.pt \
+  --output runs/detect_video/output.avi \
+  --conf 0.35 \
+  --imgsz 640
+```
+
+Chạy webcam:
+
+```bash
+python scripts/detect_video.py --source 0 --view
+```
+
+Output mặc định nằm trong `runs/detect_video/` ở dạng `.avi` dùng codec MJPG, thường dễ mở hơn file `.mp4` tạo trực tiếp từ OpenCV.
+Nếu muốn mở trực tiếp bằng Chrome, xuất `.webm`:
+
+```bash
+python scripts/detect_video.py \
+  --source path/to/video.mp4 \
+  --output runs/detect_video/output.webm
+```
 
 ---
 
@@ -206,10 +266,10 @@ Các model pre-trained được đặt tại `src/models/`:
 
 | File | Mô tả |
 |------|-------|
-| Roboflow Workflow | Detector video realtime — workspace `no-anonymous`, workflow `general-segmentation-api-2`, class `plate` |
-| `LP_ocr_nano_62.pt` | YOLOv5 OCR — nhận diện ký tự từ vùng biển số đã crop |
+| `LP_detector_nano_61.onnx` | YOLOv5 detector — phát hiện vùng biển số |
+| `LP_ocr_nano_62.onnx` | YOLOv5 OCR — nhận diện ký tự từ vùng biển số đã crop |
 
-> **Lưu ý:** Video detector dùng Roboflow Serverless Workflow. OCR vẫn dùng model local `src/models/LP_ocr_nano_62.pt` để đọc text từ crop biển số.
+> **Lưu ý:** Cả ảnh, video realtime và worker xử lý video đều dùng detector local `src/models/LP_detector_nano_61.onnx`.
 
 ---
 
@@ -217,6 +277,6 @@ Các model pre-trained được đặt tại `src/models/`:
 
 | Service | Port | Mô tả |
 |---------|------|-------|
-| PostgreSQL | `5433` (host) → `5432` (container) | Database |
+| PostgreSQL | `5433` (host) → `5432` (container) | Optional local database, chỉ chạy khi bật profile `local-db` |
 | MinIO | `9000` (API) + `9001` (Console) | Object storage |
 | Redis | `6379` | Queue Celery + realtime pub/sub |

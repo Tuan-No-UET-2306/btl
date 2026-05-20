@@ -61,24 +61,29 @@ def _ensure_user_schema(inspector) -> None:
 
 
 def _ensure_video_schema(inspector) -> None:
-    """Ensure uploaded_videos table has uploaded_at column."""
+    """Ensure uploaded_videos table has all required columns."""
     if "uploaded_videos" not in inspector.get_table_names():
         return
 
     columns = {column["name"] for column in inspector.get_columns("uploaded_videos")}
-    if "uploaded_at" in columns:
-        return
 
     with engine.begin() as connection:
-        connection.execute(
-            text(
-                "ALTER TABLE uploaded_videos "
-                "ADD COLUMN uploaded_at TIMESTAMPTZ DEFAULT now()"
+        if "uploaded_at" not in columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE uploaded_videos "
+                    "ADD COLUMN uploaded_at TIMESTAMPTZ DEFAULT now()"
+                )
             )
-        )
-        connection.execute(
-            text("UPDATE uploaded_videos SET uploaded_at = now() WHERE uploaded_at IS NULL")
-        )
+            connection.execute(
+                text("UPDATE uploaded_videos SET uploaded_at = now() WHERE uploaded_at IS NULL")
+            )
+
+        if "processed_video_url" not in columns:
+            connection.execute(
+                text("ALTER TABLE uploaded_videos ADD COLUMN processed_video_url VARCHAR(500)")
+            )
+            logger.info("Added uploaded_videos.processed_video_url column")
 
 
 def _ensure_blacklist_schema(inspector) -> None:

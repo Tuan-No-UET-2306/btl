@@ -1,5 +1,10 @@
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
 
 def _bool_env(key: str, default: bool) -> bool:
     value = os.getenv(key)
@@ -15,10 +20,11 @@ def _list_env(key: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:khongmk@localhost:5432/postgres",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not configured. Copy .env.example to .env and set the Supabase PostgreSQL URL."
+    )
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -47,16 +53,29 @@ CELERY_BACKEND_URL = os.getenv("CELERY_BACKEND_URL", "redis://localhost:6379/0")
 REDIS_URL = os.getenv("REDIS_URL", CELERY_BROKER_URL)
 REDIS_EVENT_CHANNEL = os.getenv("REDIS_EVENT_CHANNEL", "lpr:events")
 
-ROBOFLOW_API_URL = os.getenv("ROBOFLOW_API_URL", "https://serverless.roboflow.com")
-ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY", "nr1cK7LuYg2NIRcPqpyw")
-ROBOFLOW_WORKSPACE_NAME = os.getenv("ROBOFLOW_WORKSPACE_NAME", "no-anonymous")
-ROBOFLOW_WORKFLOW_ID = os.getenv("ROBOFLOW_WORKFLOW_ID", "general-segmentation-api-2")
-ROBOFLOW_CLASSES = os.getenv("ROBOFLOW_CLASSES", "plate")
-ROBOFLOW_USE_CACHE = _bool_env("ROBOFLOW_USE_CACHE", True)
-
+VIDEO_DETECT_MODEL_PATH = os.getenv("VIDEO_DETECT_MODEL_PATH", "src/models/LP_detector_nano_61.onnx")
 VIDEO_OCR_MODEL_PATH = os.getenv("VIDEO_OCR_MODEL_PATH", "src/models/LP_ocr_nano_62.onnx")
+VIDEO_DETECT_IMAGE_SIZE = max(320, int(os.getenv("VIDEO_DETECT_IMAGE_SIZE", "640")))
+VIDEO_OCR_IMAGE_SIZE = max(160, int(os.getenv("VIDEO_OCR_IMAGE_SIZE", "640")))
 VIDEO_PROCESS_EVERY_N_FRAMES = max(1, int(os.getenv("VIDEO_PROCESS_EVERY_N_FRAMES", "10")))
 VIDEO_PROCESS_MAX_FRAMES = max(1, int(os.getenv("VIDEO_PROCESS_MAX_FRAMES", "900")))
 VIDEO_DETECT_CONFIDENCE = float(os.getenv("VIDEO_DETECT_CONFIDENCE", "0.35"))
 VIDEO_OCR_CONFIDENCE = float(os.getenv("VIDEO_OCR_CONFIDENCE", "0.35"))
+VIDEO_REALTIME_DETECT_IMAGE_SIZE = max(320, int(os.getenv("VIDEO_REALTIME_DETECT_IMAGE_SIZE", "640")))
+VIDEO_REALTIME_OCR_IMAGE_SIZE = max(160, int(os.getenv("VIDEO_REALTIME_OCR_IMAGE_SIZE", "640")))
+VIDEO_REALTIME_DETECT_CONFIDENCE = float(os.getenv("VIDEO_REALTIME_DETECT_CONFIDENCE", "0.35"))
+VIDEO_REALTIME_MAX_PLATES = max(1, int(os.getenv("VIDEO_REALTIME_MAX_PLATES", "2")))
+VIDEO_REALTIME_CROP_CACHE_TTL_SECONDS = max(
+    1,
+    int(os.getenv("VIDEO_REALTIME_CROP_CACHE_TTL_SECONDS", "45")),
+)
+VIDEO_REALTIME_CROP_CACHE_MAX_ITEMS = max(
+    1,
+    int(os.getenv("VIDEO_REALTIME_CROP_CACHE_MAX_ITEMS", "256")),
+)
+VIDEO_REALTIME_CROP_JPEG_QUALITY = min(
+    95,
+    max(30, int(os.getenv("VIDEO_REALTIME_CROP_JPEG_QUALITY", "72"))),
+)
 VIDEO_UPLOAD_FRAME_CROPS = _bool_env("VIDEO_UPLOAD_FRAME_CROPS", True)
+VIDEO_PROCESS_SYNC_FALLBACK = _bool_env("VIDEO_PROCESS_SYNC_FALLBACK", False)
