@@ -38,7 +38,7 @@ class VideoService:
             user_id=user_id,
             video_url=video_url,
             filename=file.filename,
-            status="queued",
+            status="ready",
         )
 
         manager.broadcast_event(

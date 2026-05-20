@@ -138,13 +138,33 @@ export const detectionApi = {
 };
 
 export const lprApi = {
-  recognize: (file) => {
+  recognize: (file, options = {}) => {
     const formData = new FormData();
     formData.append("file", file);
-    return request("/api/v1/lpr/recognize", {
+    const q = new URLSearchParams();
+    if (options.persist === false) q.set("persist", "false");
+    const qs = q.toString();
+    return request(`/api/v1/lpr/recognize${qs ? "?" + qs : ""}`, {
       method: "POST",
       headers: { ...authHeaders() },
       body: formData,
+      signal: options.signal,
+    });
+  },
+  recognizeRealtime: (file, options = {}) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const q = new URLSearchParams();
+    if (options.ocr !== undefined) q.set("ocr", String(Boolean(options.ocr)));
+    if (options.cacheCrops !== undefined) q.set("cache_crops", String(Boolean(options.cacheCrops)));
+    if (options.maxPlates) q.set("max_plates", String(options.maxPlates));
+    if (options.minConfidence) q.set("min_confidence", String(options.minConfidence));
+    const qs = q.toString();
+    return request(`/api/v1/lpr/realtime-frame${qs ? "?" + qs : ""}`, {
+      method: "POST",
+      headers: { ...authHeaders() },
+      body: formData,
+      signal: options.signal,
     });
   },
 };

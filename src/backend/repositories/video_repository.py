@@ -57,6 +57,12 @@ class VideoRepository:
         self.db.refresh(video)
         return video
 
+    def update_processed_video_url(self, video: UploadedVideo, processed_video_url: str) -> UploadedVideo:
+        video.processed_video_url = processed_video_url
+        self.db.commit()
+        self.db.refresh(video)
+        return video
+
     def get_detections_count(self, video_id: int) -> int:
         from ..models.models import VideoDetection
 

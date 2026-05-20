@@ -104,4 +104,6 @@ def queue_video(
             detail=f"Video queue is unavailable: {str(exc)}",
         )
 
-    return {"message": "queued", "video_id": video.id, "task_id": task_id}
+    if task_id is None:
+        return {"message": "processed", "video_id": video.id, "task_id": None, "mode": "sync"}
+    return {"message": "queued", "video_id": video.id, "task_id": task_id, "mode": "async"}

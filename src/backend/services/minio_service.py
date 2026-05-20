@@ -81,9 +81,15 @@ class MinioService:
         )
         return self.get_object_url(object_name)
 
-    def upload_bytes(self, data: bytes, filename: str = "image.jpg", content_type: str = "image/jpeg") -> str:
+    def upload_bytes(
+        self,
+        data: bytes,
+        filename: str = "image.jpg",
+        content_type: str = "image/jpeg",
+        prefix: str = "images",
+    ) -> str:
         """Upload raw bytes to MinIO (for LPR images)."""
-        object_name = self.build_object_name("images", filename)
+        object_name = self.build_object_name(prefix, filename)
         self.client.put_object(
             MINIO_BUCKET,
             object_name,
