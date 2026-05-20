@@ -953,6 +953,15 @@ textarea {
 .lpr-results-list { display: grid; gap: 10px; margin-top: 16px; }
 .lpr-bbox { font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px; }
 .lpr-plates-count { text-align: center; font-size: 12px; color: var(--accent-2); padding: 8px; border-top: 1px solid var(--stroke); margin-top: 4px; }
+.lpr-realtime-crop {
+  width: 88px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.06);
+  display: block;
+}
 
 /* ===== Daily Chart ===== */
 .daily-chart {
@@ -1263,6 +1272,53 @@ textarea {
   flex-wrap: wrap;
   color: var(--muted);
   font-size: 12px;
+}
+
+/* Custom video player controls - no seek allowed */
+.lpr-player-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--stroke);
+}
+
+.lpr-progress-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.lpr-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent-3));
+  border-radius: inherit;
+  transition: width 200ms linear;
+  min-width: 6px;
+}
+
+.lpr-live-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.12);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  padding: 3px 8px;
+  border-radius: 6px;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .webcam-placeholder {

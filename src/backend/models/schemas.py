@@ -117,6 +117,7 @@ class VideoUploadResponse(BaseSchema):
     id: int
     user_id: int
     video_url: str
+    processed_video_url: Optional[str] = None
     filename: Optional[str] = None
     status: Optional[str] = None
     uploaded_at: datetime
@@ -126,6 +127,7 @@ class VideoResponse(BaseSchema):
     id: int
     user_id: int
     video_url: str
+    processed_video_url: Optional[str] = None
     filename: Optional[str] = None
     status: Optional[str] = None
     uploaded_at: datetime

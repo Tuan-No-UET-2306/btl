@@ -7,6 +7,7 @@ Handles:
 """
 import io
 import logging
+import threading
 from pathlib import Path
 
 import cv2
@@ -14,15 +15,52 @@ import numpy as np
 import torch
 from PIL import Image
 
+from ..core.config import (
+    VIDEO_DETECT_CONFIDENCE,
+    VIDEO_DETECT_IMAGE_SIZE,
+    VIDEO_DETECT_MODEL_PATH,
+    VIDEO_OCR_CONFIDENCE,
+    VIDEO_OCR_IMAGE_SIZE,
+    VIDEO_OCR_MODEL_PATH,
+)
 from .plate_format import normalize_license_plate
 
 logger = logging.getLogger(__name__)
 
 SRC_DIR = Path(__file__).resolve().parents[2]  # src/
+PROJECT_ROOT = SRC_DIR.parent
 MODELS_DIR = SRC_DIR / "models"
-DETECTOR_PATH = MODELS_DIR / "LP_detector_nano_61.onnx"
-OCR_PATH = MODELS_DIR / "LP_ocr_nano_62.onnx"
 YOLOV5_DIR = SRC_DIR / "yolov5"
+
+
+def _resolve_model_path(raw_path: str) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    return PROJECT_ROOT / path
+
+
+DETECTOR_PATH = _resolve_model_path(VIDEO_DETECT_MODEL_PATH)
+OCR_PATH = _resolve_model_path(VIDEO_OCR_MODEL_PATH)
+
+
+def _read_onnx_square_input_size(model_path: Path) -> int | None:
+    if model_path.suffix.lower() != ".onnx":
+        return None
+
+    try:
+        import onnx
+
+        model = onnx.load(str(model_path), load_external_data=False)
+        dims = model.graph.input[0].type.tensor_type.shape.dim
+        height = dims[2].dim_value
+        width = dims[3].dim_value
+        if height and width and height == width:
+            return int(height)
+    except Exception as exc:
+        logger.debug("Could not inspect ONNX input size for %s: %s", model_path, exc)
+
+    return None
 
 
 def _select_onnx_device() -> str:
@@ -44,7 +82,11 @@ class LPRService:
         self.detector = None
         self.ocr_model = None
         self.device = _select_onnx_device()
+        self._detector_lock = threading.RLock()
+        self._ocr_lock = threading.RLock()
         self._models_loaded = False
+        self.detector_input_size = _read_onnx_square_input_size(DETECTOR_PATH)
+        self.ocr_input_size = _read_onnx_square_input_size(OCR_PATH)
         self._load_models()
 
     def is_ready(self) -> bool:
@@ -75,9 +117,13 @@ class LPRService:
                 force_reload=False,
                 device=self.device,
             )
-            self.detector.conf = 0.5
+            self.detector.conf = VIDEO_DETECT_CONFIDENCE
             self.detector.iou = 0.45
-            logger.info("Detector model loaded successfully")
+            self.detector.max_det = 8
+            logger.info(
+                "Detector model loaded successfully; input_size=%s",
+                self.detector_input_size or VIDEO_DETECT_IMAGE_SIZE,
+            )
 
             logger.info("Loading OCR model...")
             self.ocr_model = torch.hub.load(
@@ -88,8 +134,13 @@ class LPRService:
                 force_reload=False,
                 device=self.device,
             )
-            self.ocr_model.conf = 0.3
-            logger.info("OCR model loaded successfully")
+            self.ocr_model.conf = VIDEO_OCR_CONFIDENCE
+            self.ocr_model.iou = 0.45
+            self.ocr_model.max_det = 16
+            logger.info(
+                "OCR model loaded successfully; input_size=%s",
+                self.ocr_input_size or VIDEO_OCR_IMAGE_SIZE,
+            )
 
             self._models_loaded = True
 
@@ -124,11 +175,13 @@ class LPRService:
 
         # Tính y trung bình của mỗi char để phân biệt dòng trên / dưới
         df["y_center"] = (df["ymin"] + df["ymax"]) / 2.0
-        y_median = df["y_center"].median()
-        y_std = df["y_center"].std()
+        df["char_height"] = df["ymax"] - df["ymin"]
+        y_median = float(df["y_center"].median())
+        y_std = float(df["y_center"].std() or 0.0)
+        median_char_height = max(1.0, float(df["char_height"].median() or 1.0))
 
         # Nếu std nhỏ → 1 dòng → sort theo x
-        if y_std < 10:
+        if len(df) <= 1 or y_std < max(8.0, median_char_height * 0.45):
             df = df.sort_values("xmin")
             return "".join(str(c) for c in df["name"].tolist())
 
@@ -143,7 +196,11 @@ class LPRService:
             return f"{top_text}-{bottom_text}"
         return top_text or bottom_text
 
-    def _ocr_plate(self, plate_crop_rgb: np.ndarray) -> tuple:
+    def _ocr_plate(
+        self,
+        plate_crop_rgb: np.ndarray,
+        image_size: int | None = None,
+    ) -> tuple:
         """
         Nhận diện ký tự trên crop biển số.
         Returns: (plate_number: str, ocr_confidence: float)
@@ -161,7 +218,12 @@ class LPRService:
                 plate_crop_rgb, (new_w, new_h), interpolation=cv2.INTER_CUBIC
             )
 
-        ocr_results = self.ocr_model(plate_crop_rgb)
+        effective_image_size = self.ocr_input_size or image_size or VIDEO_OCR_IMAGE_SIZE
+        with self._ocr_lock, torch.no_grad():
+            ocr_results = self.ocr_model(
+                plate_crop_rgb,
+                size=effective_image_size,
+            )
         ocr_df = ocr_results.pandas().xyxy[0]
 
         if ocr_df.empty:
@@ -172,7 +234,92 @@ class LPRService:
 
         return plate_number, ocr_conf
 
-    def predict(self, image_bytes: bytes) -> dict:
+    @staticmethod
+    def _is_reasonable_plate_box(
+        bbox: tuple[int, int, int, int],
+        image_width: int,
+        image_height: int,
+    ) -> bool:
+        x1, y1, x2, y2 = bbox
+        width = x2 - x1
+        height = y2 - y1
+        if width < 14 or height < 6:
+            return False
+
+        area_ratio = (width * height) / max(1, image_width * image_height)
+        aspect_ratio = width / max(1, height)
+        if area_ratio < 0.00004 or area_ratio > 0.08:
+            return False
+        return 0.8 <= aspect_ratio <= 9.5
+
+    @staticmethod
+    def _crop_plate_rgb(
+        img_rgb: np.ndarray,
+        bbox: tuple[int, int, int, int],
+        padding_ratio: float = 0.12,
+    ) -> np.ndarray:
+        x1, y1, x2, y2 = bbox
+        width = x2 - x1
+        height = y2 - y1
+        pad_x = int(width * padding_ratio)
+        pad_y = int(height * padding_ratio)
+        frame_height, frame_width = img_rgb.shape[:2]
+        x1_pad = max(0, x1 - pad_x)
+        y1_pad = max(0, y1 - pad_y)
+        x2_pad = min(frame_width, x2 + pad_x)
+        y2_pad = min(frame_height, y2 + pad_y)
+        return img_rgb[y1_pad:y2_pad, x1_pad:x2_pad]
+
+    def _detect_plate_rows(
+        self,
+        img_rgb: np.ndarray,
+        min_confidence: float | None = None,
+        max_plates: int | None = None,
+        image_size: int | None = None,
+    ):
+        if self.detector is None:
+            return None
+
+        with self._detector_lock, torch.no_grad():
+            previous_confidence = getattr(self.detector, "conf", None)
+            try:
+                if min_confidence is not None:
+                    self.detector.conf = min_confidence
+                effective_image_size = self.detector_input_size or image_size or VIDEO_DETECT_IMAGE_SIZE
+                det_results = self.detector(
+                    img_rgb,
+                    size=effective_image_size,
+                )
+            finally:
+                if min_confidence is not None and previous_confidence is not None:
+                    self.detector.conf = previous_confidence
+
+        det_df = det_results.pandas().xyxy[0]
+        if det_df.empty:
+            return det_df
+        det_df = det_df.sort_values("confidence", ascending=False)
+        if max_plates is not None:
+            det_df = det_df.head(max_plates)
+        return det_df
+
+    @staticmethod
+    def _combined_confidence(detect_confidence: float, ocr_confidence: float) -> float:
+        if ocr_confidence > 0:
+            return round((detect_confidence * 0.65) + (ocr_confidence * 0.35), 4)
+        return round(detect_confidence, 4)
+
+    def predict(
+        self,
+        image_bytes: bytes,
+        *,
+        run_ocr: bool = True,
+        min_detect_confidence: float | None = None,
+        max_plates: int | None = None,
+        detect_image_size: int | None = None,
+        ocr_image_size: int | None = None,
+        return_crops: bool = False,
+        realtime: bool = False,
+    ) -> dict:
         """
         Run detection + OCR on an image. Supports multiple plates and multi-line plates.
         Returns: {
@@ -200,77 +347,102 @@ class LPRService:
         try:
             img_bgr = self._decode_image(image_bytes)
             img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-            logger.info("Image shape: %s", img_rgb.shape)
+            image_height, image_width = img_rgb.shape[:2]
+            log = logger.debug if realtime else logger.info
+            log("LPR image shape: %s", img_rgb.shape)
 
-            # Step 1: Detect ALL license plates
-            logger.info("Running plate detection...")
-            det_results = self.detector(img_rgb)
-            det_df = det_results.pandas().xyxy[0]
+            det_df = self._detect_plate_rows(
+                img_rgb,
+                min_confidence=min_detect_confidence,
+                max_plates=max_plates,
+                image_size=detect_image_size,
+            )
 
-            if det_df.empty:
-                logger.info("No license plate detected")
+            if det_df is None or det_df.empty:
+                log("No license plate detected")
                 return {
                     "plates": [],
                     "success": False,
                     "error": "No license plate detected in image",
                 }
 
-            logger.info("Detected %d object(s)", len(det_df))
-            logger.info("Labels: %s", det_df["name"].tolist())
+            log("Detected %d plate candidate(s)", len(det_df))
 
             plates = []
-
-            # Sort by confidence descending, process each detection
-            det_df = det_df.sort_values("confidence", ascending=False)
-
             for idx, (_, row) in enumerate(det_df.iterrows()):
-                x1, y1, x2, y2 = map(int, [
-                    row["xmin"], row["ymin"], row["xmax"], row["ymax"]
-                ])
+                x1, y1, x2, y2 = map(
+                    int,
+                    [
+                        round(float(row["xmin"])),
+                        round(float(row["ymin"])),
+                        round(float(row["xmax"])),
+                        round(float(row["ymax"])),
+                    ],
+                )
+                x1 = max(0, min(image_width - 1, x1))
+                y1 = max(0, min(image_height - 1, y1))
+                x2 = max(0, min(image_width, x2))
+                y2 = max(0, min(image_height, y2))
                 detect_conf = float(row["confidence"])
-                detect_label = str(row["name"])
+                detect_label = str(row.get("name", "plate"))
+                bbox = (x1, y1, x2, y2)
 
-                # Bỏ qua detection quá nhỏ
-                if (x2 - x1) < 20 or (y2 - y1) < 10:
-                    logger.info("Skipping small detection #%d: %dx%d", idx, x2 - x1, y2 - y1)
+                if not self._is_reasonable_plate_box(bbox, image_width, image_height):
+                    logger.debug(
+                        "Skipping implausible plate candidate #%d: bbox=%s image=%dx%d",
+                        idx,
+                        bbox,
+                        image_width,
+                        image_height,
+                    )
                     continue
 
-                # Crop plate region (with some padding)
-                pad_x = int((x2 - x1) * 0.08)
-                pad_y = int((y2 - y1) * 0.08)
-                x1_pad = max(0, x1 - pad_x)
-                y1_pad = max(0, y1 - pad_y)
-                x2_pad = min(img_rgb.shape[1], x2 + pad_x)
-                y2_pad = min(img_rgb.shape[0], y2 + pad_y)
+                plate_number = "UNKNOWN"
+                ocr_conf = 0.0
+                plate_crop = self._crop_plate_rgb(img_rgb, bbox)
+                if run_ocr:
+                    if plate_crop.size == 0:
+                        logger.debug("Empty crop for detection #%d, skipping OCR", idx)
+                    else:
+                        try:
+                            plate_number, ocr_conf = self._ocr_plate(
+                                plate_crop,
+                                image_size=ocr_image_size,
+                            )
+                            plate_number = plate_number or "UNKNOWN"
+                        except Exception as exc:
+                            logger.debug(
+                                "OCR failed for detection #%d bbox=%s: %s",
+                                idx,
+                                bbox,
+                                exc,
+                                exc_info=True,
+                            )
 
-                plate_crop = img_rgb[y1_pad:y2_pad, x1_pad:x2_pad]
-
-                if plate_crop.size == 0:
-                    logger.warning("Empty crop for detection #%d, skipping", idx)
-                    continue
-
-                logger.info(
-                    "Processing plate #%d: label=%s, conf=%.4f, bbox=[%d,%d,%d,%d]",
-                    idx, detect_label, detect_conf, x1, y1, x2, y2,
+                overall_conf = self._combined_confidence(detect_conf, ocr_conf)
+                logger.debug(
+                    "Plate #%d result: label=%s plate=%s detect=%.4f ocr=%.4f bbox=%s",
+                    idx,
+                    detect_label,
+                    plate_number,
+                    detect_conf,
+                    ocr_conf,
+                    bbox,
                 )
 
-                # Step 2: OCR on cropped plate
-                plate_number, ocr_conf = self._ocr_plate(plate_crop)
-
-                overall_conf = round((detect_conf + ocr_conf) / 2, 4) if ocr_conf > 0 else detect_conf
-
-                logger.info(
-                    "Plate #%d result: '%s' (detect=%.4f, ocr=%.4f, overall=%.4f)",
-                    idx, plate_number, detect_conf, ocr_conf, overall_conf,
-                )
-
-                plates.append({
+                plate_result = {
                     "plate_number": plate_number,
                     "confidence": overall_conf,
                     "detect_confidence": detect_conf,
                     "ocr_confidence": ocr_conf,
                     "bbox": [x1, y1, x2, y2],
-                })
+                    "label": detect_label,
+                    "has_ocr": bool(run_ocr and ocr_conf > 0),
+                }
+                if return_crops and plate_crop.size > 0:
+                    plate_result["_crop_rgb"] = plate_crop
+
+                plates.append(plate_result)
 
             if not plates:
                 return {

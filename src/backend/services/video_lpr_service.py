@@ -1,8 +1,9 @@
-"""Roboflow-backed license plate detection helpers for video processing."""
+"""Video LPR helpers backed by local ONNX models."""
 
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,14 +13,11 @@ import numpy as np
 import torch
 
 from ..core.config import (
-    ROBOFLOW_API_KEY,
-    ROBOFLOW_API_URL,
-    ROBOFLOW_CLASSES,
-    ROBOFLOW_USE_CACHE,
-    ROBOFLOW_WORKFLOW_ID,
-    ROBOFLOW_WORKSPACE_NAME,
     VIDEO_DETECT_CONFIDENCE,
+    VIDEO_DETECT_IMAGE_SIZE,
+    VIDEO_DETECT_MODEL_PATH,
     VIDEO_OCR_CONFIDENCE,
+    VIDEO_OCR_IMAGE_SIZE,
     VIDEO_OCR_MODEL_PATH,
 )
 from .plate_format import normalize_license_plate
@@ -58,93 +56,72 @@ def _select_onnx_device() -> str:
     return "cuda" if "CUDAExecutionProvider" in onnxruntime.get_available_providers() else "cpu"
 
 
-class RoboflowPlateDetector:
-    """Runs the configured Roboflow Workflow and normalizes plate predictions."""
+class LocalOnnxPlateDetector:
+    """Runs the local LP_detector_nano_61.onnx model and normalizes plate predictions."""
 
     def __init__(self) -> None:
-        if not ROBOFLOW_API_KEY:
-            raise RuntimeError("ROBOFLOW_API_KEY is not configured")
-
-        try:
-            from inference_sdk import InferenceHTTPClient
-        except ImportError as exc:
-            raise RuntimeError(
-                "inference-sdk is not installed. Run: pip install -r requirement.txt"
-            ) from exc
-
-        self.client = InferenceHTTPClient(
-            api_url=ROBOFLOW_API_URL,
-            api_key=ROBOFLOW_API_KEY,
-        )
+        self.model = None
+        self.device = _select_onnx_device()
         self.min_confidence = VIDEO_DETECT_CONFIDENCE
+        self._lock = threading.RLock()
+        self._ready = False
+        self._load_model()
 
     def is_ready(self) -> bool:
-        return True
+        return self._ready
+
+    def _load_model(self) -> None:
+        detector_path = _resolve_path(VIDEO_DETECT_MODEL_PATH)
+        if not detector_path.exists():
+            raise RuntimeError(f"Video detector model not found at {detector_path}")
+        if not YOLOV5_DIR.exists():
+            raise RuntimeError(f"YOLOv5 source not found at {YOLOV5_DIR}")
+
+        self.model = torch.hub.load(
+            str(YOLOV5_DIR),
+            "custom",
+            path=str(detector_path),
+            source="local",
+            force_reload=False,
+            device=self.device,
+        )
+        self.model.conf = self.min_confidence
+        self.model.iou = 0.45
+        self.model.max_det = 8
+        self._ready = True
+        logger.info("Video detector loaded from %s", detector_path)
 
     def detect(self, frame_bgr: np.ndarray) -> list[PlateDetection]:
-        if frame_bgr.size == 0:
+        if not self._ready or self.model is None or frame_bgr.size == 0:
             return []
 
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        parameters = {"classes": ROBOFLOW_CLASSES} if ROBOFLOW_CLASSES else {}
 
         try:
-            result = self.client.run_workflow(
-                workspace_name=ROBOFLOW_WORKSPACE_NAME,
-                workflow_id=ROBOFLOW_WORKFLOW_ID,
-                images={"image": frame_rgb},
-                parameters=parameters,
-                use_cache=ROBOFLOW_USE_CACHE,
-            )
+            with self._lock, torch.no_grad():
+                result = self.model(frame_rgb, size=VIDEO_DETECT_IMAGE_SIZE)
+            det_df = result.pandas().xyxy[0]
         except Exception as exc:
-            logger.debug("Roboflow video detector failed: %s", exc, exc_info=True)
+            logger.debug("Local ONNX video detector failed: %s", exc, exc_info=True)
             return []
 
         height, width = frame_bgr.shape[:2]
         detections: list[PlateDetection] = []
-        for prediction in self._extract_predictions(result):
+        for _, row in det_df.iterrows():
+            prediction = {
+                "xmin": row["xmin"],
+                "ymin": row["ymin"],
+                "xmax": row["xmax"],
+                "ymax": row["ymax"],
+                "confidence": row["confidence"],
+                "name": row.get("name", "plate"),
+            }
             detection = self._to_plate_detection(prediction, width=width, height=height)
             if detection and detection.confidence >= self.min_confidence:
                 detections.append(detection)
 
         detections.sort(key=lambda item: item.confidence, reverse=True)
         return detections
-
-    def _extract_predictions(self, payload: Any) -> list[dict[str, Any]]:
-        predictions: list[dict[str, Any]] = []
-        seen: set[int] = set()
-
-        def walk(node: Any) -> None:
-            if isinstance(node, dict):
-                if self._looks_like_prediction(node):
-                    marker = id(node)
-                    if marker not in seen:
-                        seen.add(marker)
-                        predictions.append(node)
-                    return
-
-                for key, value in node.items():
-                    if key.lower() in {"image", "visualization", "output_image"}:
-                        continue
-                    if isinstance(value, (dict, list)):
-                        walk(value)
-                return
-
-            if isinstance(node, list):
-                for item in node:
-                    walk(item)
-
-        walk(payload)
-        return predictions
-
-    @staticmethod
-    def _looks_like_prediction(node: dict[str, Any]) -> bool:
-        keys = set(node.keys())
-        has_xywh = {"x", "y", "width", "height"}.issubset(keys)
-        has_xyxy = {"xmin", "ymin", "xmax", "ymax"}.issubset(keys)
-        has_bbox = "bbox" in keys or "bounding_box" in keys
-        has_points = isinstance(node.get("points"), list) and len(node.get("points") or []) > 0
-        return has_xywh or has_xyxy or has_bbox or has_points
 
     @staticmethod
     def _confidence(prediction: dict[str, Any]) -> float:
@@ -261,6 +238,7 @@ class PlateOCRService:
     def __init__(self) -> None:
         self.model = None
         self.device = _select_onnx_device()
+        self._lock = threading.RLock()
         self._ready = False
         self._load_model()
 
@@ -286,6 +264,8 @@ class PlateOCRService:
                 device=self.device,
             )
             self.model.conf = VIDEO_OCR_CONFIDENCE
+            self.model.iou = 0.45
+            self.model.max_det = 16
             self._ready = True
             logger.info("Video OCR model loaded from %s", ocr_path)
         except Exception as exc:
@@ -298,10 +278,12 @@ class PlateOCRService:
 
         df = ocr_df.copy()
         df["y_center"] = (df["ymin"] + df["ymax"]) / 2.0
-        y_median = df["y_center"].median()
-        y_std = df["y_center"].std()
+        df["char_height"] = df["ymax"] - df["ymin"]
+        y_median = float(df["y_center"].median())
+        y_std = float(df["y_center"].std() or 0.0)
+        median_char_height = max(1.0, float(df["char_height"].median() or 1.0))
 
-        if len(df) <= 1 or y_std < 10:
+        if len(df) <= 1 or y_std < max(8.0, median_char_height * 0.45):
             df = df.sort_values("xmin")
             return "".join(str(c) for c in df["name"].tolist())
 
@@ -330,7 +312,8 @@ class PlateOCRService:
                     interpolation=cv2.INTER_CUBIC,
                 )
 
-            result = self.model(plate_crop_rgb)
+            with self._lock, torch.no_grad():
+                result = self.model(plate_crop_rgb, size=VIDEO_OCR_IMAGE_SIZE)
             ocr_df = result.pandas().xyxy[0]
             if ocr_df.empty:
                 return "", 0.0
@@ -341,3 +324,26 @@ class PlateOCRService:
         except Exception as exc:
             logger.debug("Video OCR failed: %s", exc, exc_info=True)
             return "", 0.0
+
+
+_singleton_lock = threading.Lock()
+_detector_singleton: LocalOnnxPlateDetector | None = None
+_ocr_singleton: PlateOCRService | None = None
+
+
+def get_video_detector() -> LocalOnnxPlateDetector:
+    global _detector_singleton
+    if _detector_singleton is None:
+        with _singleton_lock:
+            if _detector_singleton is None:
+                _detector_singleton = LocalOnnxPlateDetector()
+    return _detector_singleton
+
+
+def get_video_ocr_service() -> PlateOCRService:
+    global _ocr_singleton
+    if _ocr_singleton is None:
+        with _singleton_lock:
+            if _ocr_singleton is None:
+                _ocr_singleton = PlateOCRService()
+    return _ocr_singleton
