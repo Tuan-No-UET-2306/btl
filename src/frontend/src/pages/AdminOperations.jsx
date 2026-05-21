@@ -168,6 +168,7 @@ export default function AdminOperations() {
                 <th>Violation</th>
                 <th>Points / Fine</th>
                 <th>Filed By</th>
+                <th>Reason</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -178,7 +179,7 @@ export default function AdminOperations() {
                   <td>
                     <strong style={{ fontSize: 12 }}>{item.case_id}</strong>
                   </td>
-                  <td>{item.license_plate || "-"}</td>
+                  <td>{item.plate_number || item.license_plate || "-"}</td>
                   <td>
                     {item.violation_type || "-"}
                     <br />
@@ -207,6 +208,9 @@ export default function AdminOperations() {
                     <div style={{ color: "var(--muted)", fontSize: 11 }}>
                       {item.citizen_id || "-"}
                     </div>
+                  </td>
+                  <td style={{ fontSize: 12, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div>{item.reason || "-"}</div>
                   </td>
                   <td>
                     <span

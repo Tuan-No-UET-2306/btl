@@ -84,7 +84,7 @@ export default function ComplaintHistory() {
                     <td>
                       <strong>{c.case_id}</strong>
                     </td>
-                    <td>{c.license_plate || "-"}</td>
+                    <td>{c.plate_number || c.license_plate || "-"}</td>
                     <td>
                       {c.violation_type || "-"}
                       {c.points_deducted > 0 && (

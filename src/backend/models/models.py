@@ -142,10 +142,11 @@ class Violation(Base):
         nullable=False,
         index=True,
     )
+    plate_number = Column(String(32), nullable=True, index=True)  # Denormalized for direct queries
     violation_type = Column(String(100), nullable=False)
     fine_amount = Column(Numeric(10, 2), nullable=True)
-    points_deducted = Column(Integer, default=0)  # Số điểm bị trừ
-    status = Column(String(20), default="pending")  # pending, approved, rejected
+    points_deducted = Column(Integer, default=0)
+    status = Column(String(20), default="pending")  # pending, dismissed, approved, rejected
     issued_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -160,6 +161,13 @@ class Complaint(Base):
         nullable=False,
         index=True,
     )
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    plate_number = Column(String, nullable=True)  # Denormalized
     full_name = Column(String(100), nullable=False)
     citizen_id = Column(String(20), nullable=False)
     phone_number = Column(String(15), nullable=True)

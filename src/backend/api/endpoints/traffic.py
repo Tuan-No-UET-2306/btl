@@ -36,9 +36,9 @@ def create_complaint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """File a complaint against a specific violation."""
+    """File a complaint against a specific violation. Tracks which user filed it."""
     service = TrafficService(db)
-    return service.create_complaint(payload)
+    return service.create_complaint(payload, current_user.id)
 
 
 @router.get("/complaints")
@@ -46,9 +46,14 @@ def list_complaints(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List all complaints with violation and vehicle info."""
+    """
+    List complaints.
+    - Admin: sees all complaints
+    - Regular user: sees only their own complaints
+    """
     service = TrafficService(db)
-    return service.list_complaints()
+    is_admin = current_user.role == "admin"
+    return service.list_complaints(user_id=current_user.id, is_admin=is_admin)
 
 
 @router.post("/violations", status_code=status.HTTP_201_CREATED)
