@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ScanLine, History, Ban, Camera, Video, Shield, Users } from "lucide-react";
+import { LayoutDashboard, ScanLine, History, Ban, Camera, Video, Shield, ShieldAlert, FileText, Users, Activity } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { getCachedProfile } from "../utils/auth";
 
@@ -8,6 +8,8 @@ const navLinkClass = ({ isActive }) =>
 
 const publicLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/traffic", label: "Traffic", icon: ShieldAlert },
+  { to: "/complaints", label: "Complaints", icon: FileText },
   { to: "/lpr", label: "LPR Recognition", icon: ScanLine },
   { to: "/video", label: "Video", icon: Video },
   { to: "/history", label: "History", icon: History },
@@ -16,6 +18,7 @@ const publicLinks = [
 ];
 
 const adminLinks = [
+  { to: "/admin", label: "Operations", icon: Activity },
   { to: "/users", label: "Users", icon: Users },
 ];
 

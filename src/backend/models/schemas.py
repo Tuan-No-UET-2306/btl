@@ -167,3 +167,76 @@ class VideoDetectionResponse(BaseSchema):
 
 class VideoDetailResponse(VideoResponse):
     detections: list[VideoDetectionResponse] = []
+
+
+# ────────────────────────────── Traffic / Violation ──────────────────────────────
+
+
+class TrafficLookupResponse(BaseModel):
+    """Response for license plate lookup."""
+    plate_number: str
+    is_blacklisted: bool
+    blacklist_reason: Optional[str] = None
+    owner_name: Optional[str] = None
+    owner_citizen_id: Optional[str] = None
+    vehicle_type: Optional[str] = None
+    vehicle_brand: Optional[str] = None
+    vehicle_color: Optional[str] = None
+    total_points_deducted: int = 0
+    points_remaining: int = 12  # Max 12 points
+    violations: list["ViolationInfo"] = []
+
+
+class ViolationInfo(BaseModel):
+    """Individual violation info."""
+    id: int
+    violation_type: str
+    fine_amount: Optional[float] = None
+    points_deducted: int = 0
+    status: str
+    issued_at: Optional[datetime] = None
+
+
+class ComplaintCreate(BaseModel):
+    violation_id: int
+    full_name: str
+    citizen_id: str
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    reason: str
+    evidence_url: Optional[str] = None
+
+
+class ComplaintResponse(BaseSchema):
+    id: int
+    violation_id: int
+    full_name: str
+    citizen_id: str
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    reason: str
+    evidence_url: Optional[str] = None
+    status: str
+    created_at: datetime
+    case_id: str = ""  # Format: #KP-XXXXX
+
+
+class ViolationCreate(BaseModel):
+    """Admin creates a new violation for a vehicle."""
+    license_plate: str
+    violation_type: str
+    points_deducted: int = Field(..., ge=2, le=10)
+    fine_amount: Optional[float] = None
+
+
+class ComplaintStatusUpdate(BaseModel):
+    """Admin updates the status of a complaint (approve/reject)."""
+    status: str = Field(..., pattern="^(approved|rejected)$")
+
+
+class ViolationUpdate(BaseModel):
+    """Admin updates violation details."""
+    violation_type: Optional[str] = None
+    points_deducted: Optional[int] = Field(default=None, ge=2, le=10)
+    fine_amount: Optional[float] = None
+    status: Optional[str] = None
