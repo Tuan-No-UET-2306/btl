@@ -33,6 +33,7 @@
   --skeleton-shine: rgba(255, 255, 255, 0.08);
   --stat-card-bg: rgba(12, 19, 34, 0.6);
   --panel-bg: rgba(255, 255, 255, 0.02);
+  --visual-bg: rgba(12, 20, 34, 0.65);
 }
 
 /* ===== Light Theme Overrides ===== */
@@ -57,6 +58,7 @@
   --skeleton-shine: rgba(0, 0, 0, 0.1);
   --stat-card-bg: rgba(255, 255, 255, 0.8);
   --panel-bg: rgba(0, 0, 0, 0.02);
+  --visual-bg: rgba(226, 235, 246, 0.8);
 }
 
 /* ===== Light Mode Specific Fixes ===== */
@@ -1968,3 +1970,298 @@ textarea {
   background: rgba(220, 60, 60, 0.15) !important;
   color: #b91c1c !important;
 }
+
+/* ===== RESPONSIVE AUTH CARD & GRID ===== */
+.auth-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 10;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  gap: 2rem;
+}
+
+@media (min-width: 992px) {
+  .auth-grid {
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+}
+
+/* ===== CAMERA VIEWFINDER OVERLAY ===== */
+.camera-viewfinder-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  background: #000;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.camera-viewfinder-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.viewfinder-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-2);
+  pointer-events: none;
+}
+
+.viewfinder-corner.tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+.viewfinder-corner.tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+.viewfinder-corner.bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+.viewfinder-corner.br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+.camera-header-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 10px;
+  color: var(--accent-2);
+  text-shadow: 0 0 4px rgba(42, 209, 255, 0.4);
+}
+
+.camera-rec-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.camera-rec-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #ff3b30;
+  border-radius: 50%;
+  animation: blink-rec 1.2s infinite;
+}
+
+@keyframes blink-rec {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 8px #ff3b30; }
+  50% { opacity: 0.2; transform: scale(0.9); }
+}
+
+.camera-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.camera-crosshair::before,
+.camera-crosshair::after {
+  content: "";
+  position: absolute;
+  background: var(--accent-2);
+}
+
+.camera-crosshair::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  margin-top: -0.5px;
+}
+
+.camera-crosshair::after {
+  left: 50%;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  margin-left: -0.5px;
+}
+
+.camera-crosshair-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--accent-2);
+  border-radius: 50%;
+}
+
+.camera-footer-stats {
+  display: flex;
+  justify-content: space-between;
+  font-family: monospace;
+  font-size: 9px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.camera-tech-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.light .camera-viewfinder-container {
+  background: #f0f4f8;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.light .camera-rec-container,
+.light .camera-footer-stats {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+  color: #1a2332;
+}
+
+/* ===== FLOATING LABEL SYSTEM ===== */
+.floating-group {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.floating-group .input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+
+.floating-group input {
+  padding-top: 18px;
+  padding-bottom: 6px;
+  height: 48px;
+}
+
+.floating-group label {
+  position: absolute;
+  left: 36px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+}
+
+/* Floating Label Animation triggers */
+.floating-group input:focus ~ label,
+.floating-group .input-wrapper.focused label,
+.floating-group .input-wrapper.has-value label {
+  top: 12px;
+  left: 36px;
+  transform: translateY(-50%) scale(0.8);
+  transform-origin: left top;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.floating-group .input-icon {
+  margin-top: 4px;
+}
+
+.floating-group .password-toggle {
+  margin-top: 4px;
+}
+
+/* Strength and Criteria enhancements */
+.password-criteria-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.password-criteria-item.active {
+  transform: translateX(2px);
+}
+
+/* Glass card styling for register benefits */
+.benefit-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(42, 209, 255, 0.15);
+  transform: translateX(4px);
+}
+
+.benefit-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(42, 209, 255, 0.08);
+  border: 1px solid rgba(42, 209, 255, 0.15);
+  color: var(--accent-2);
+}
+
+.light .benefit-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.04);
+}
+
+.light .benefit-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(42, 209, 255, 0.3);
+}
+
+.light .benefit-icon-container {
+  background: rgba(42, 209, 255, 0.1);
+  border-color: rgba(42, 209, 255, 0.25);
+}
+
+/* ===== CARD VISUAL WIDGET STYLE ===== */
+.card-visual {
+  background: var(--visual-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+}
+
+.light .card-visual {
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.6), 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+
