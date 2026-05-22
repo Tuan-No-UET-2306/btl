@@ -72,6 +72,7 @@ function CreateViolationSection({ onViolationCreated }) {
         borderRadius: 12,
         padding: 16,
         background: "rgba(255,59,48,0.04)",
+        transition: "all 0.2s",
       }}
     >
       <div
@@ -98,6 +99,15 @@ function CreateViolationSection({ onViolationCreated }) {
               onChange={(e) => handleChange("license_plate", e.target.value)}
               required
               placeholder="e.g. 30A-123.45"
+              style={{ transition: "border 0.2s, box-shadow 0.2s" }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#2ad1ff";
+                e.target.style.boxShadow = "0 0 0 2px rgba(42,209,255,0.2)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "";
+                e.target.style.boxShadow = "";
+              }}
             />
           </div>
           <div className="form-group" style={{ flex: "1 1 180px", marginBottom: 0 }}>
@@ -141,6 +151,15 @@ function CreateViolationSection({ onViolationCreated }) {
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,59,48,0.4)";
+              e.currentTarget.style.transform = "scale(1.02)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,59,48,0.2)";
+              e.currentTarget.style.transform = "scale(1)";
             }}
           >
             <PlusCircle size={14} />{" "}
@@ -232,7 +251,7 @@ export default function TrafficLookup() {
   };
 
   return (
-    <section className="panel" style={{ minHeight: "auto" }}>
+    <section className="panel" style={{ minHeight: "auto", transition: "all 0.2s" }}>
       {/* Header */}
       <div className="panel-head">
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -249,14 +268,36 @@ export default function TrafficLookup() {
             value={plateInput}
             onChange={(e) => setPlateInput(e.target.value)}
             placeholder="Enter license plate (e.g. 30A-123.45)"
-            style={{ flex: 1, padding: "10px 12px", background: "transparent", border: "none", color: "inherit", fontSize: 14, outline: "none" }}
+            style={{
+              flex: 1,
+              padding: "10px 12px",
+              background: "transparent",
+              border: "none",
+              color: "inherit",
+              fontSize: 14,
+              outline: "none",
+              transition: "background 0.2s",
+            }}
           />
         </div>
         <button
           className="btn btn-cool"
           type="submit"
           disabled={loading || !plateInput.trim()}
-          style={{ display: "flex", alignItems: "center", gap: 6 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            if (!loading && plateInput.trim()) {
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
         >
           <Search size={16} /> {loading ? "Searching..." : "Lookup"}
         </button>
@@ -266,7 +307,7 @@ export default function TrafficLookup() {
       {error && (
         <div
           className="lpr-result error"
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 12, animation: "shake 0.3s ease" }}
         >
           <div className="lpr-result-icon">
             <XCircle size={24} />
@@ -291,6 +332,7 @@ export default function TrafficLookup() {
                 background: "rgba(255,59,48,0.08)",
                 display: "grid",
                 gap: 12,
+                animation: "pulseGlow 1.5s infinite",
               }}
             >
               <div
@@ -330,7 +372,7 @@ export default function TrafficLookup() {
             </div>
           ) : (
             /* Normal Result */
-            <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "grid", gap: 16, animation: "fadeInUp 0.3s ease" }}>
               {/* Vehicle Info */}
               <div
                 style={{
@@ -338,6 +380,15 @@ export default function TrafficLookup() {
                   borderRadius: 12,
                   padding: 16,
                   background: "var(--stat-card-bg)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "";
                 }}
               >
                 <div
@@ -389,6 +440,13 @@ export default function TrafficLookup() {
                     borderRadius: 12,
                     padding: 16,
                     background: "var(--stat-card-bg)",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
                   <div
@@ -432,6 +490,7 @@ export default function TrafficLookup() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
+                  transition: "all 0.2s",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -462,6 +521,7 @@ export default function TrafficLookup() {
                           : result.points_remaining <= 6
                           ? "#ffd28b"
                           : "#2ed573",
+                      transition: "color 0.2s",
                     }}
                   >
                     {result.points_remaining}/{MAX_POINTS}
@@ -498,6 +558,16 @@ export default function TrafficLookup() {
                         alignItems: "center",
                         justifyContent: "space-between",
                         gap: 12,
+                        transition: "all 0.2s",
+                        animation: `fadeInRight 0.25s ease ${idx * 0.05}s both`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                        e.currentTarget.style.transform = "translateX(4px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "var(--panel-bg)";
+                        e.currentTarget.style.transform = "translateX(0)";
                       }}
                     >
                       <div style={{ display: "grid", gap: 4, flex: 1 }}>
@@ -546,8 +616,17 @@ export default function TrafficLookup() {
                           alignItems: "center",
                           gap: 4,
                           flexShrink: 0,
+                          transition: "all 0.2s",
                         }}
                         onClick={() => openComplaint(v)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(255,210,139,0.3)";
+                          e.currentTarget.style.transform = "scale(1.02)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(255,210,139,0.15)";
+                          e.currentTarget.style.transform = "scale(1)";
+                        }}
                       >
                         <FileText size={12} /> File Complaint
                       </button>
@@ -560,7 +639,7 @@ export default function TrafficLookup() {
               {(!result.violations || result.violations.length === 0) && (
                 <div
                   className="lpr-result success"
-                  style={{ marginTop: 8 }}
+                  style={{ marginTop: 8, animation: "fadeIn 0.3s ease" }}
                 >
                   <div className="lpr-result-icon">
                     <CheckCircle size={24} />
@@ -582,8 +661,21 @@ export default function TrafficLookup() {
 
       {/* Complaint Modal */}
       {showComplaint && selectedViolation && (
-        <div className="bl-modal-overlay" onClick={() => setShowComplaint(false)}>
-          <div className="bl-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="bl-modal-overlay"
+          onClick={() => setShowComplaint(false)}
+          style={{
+            animation: "fadeIn 0.2s ease",
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          <div
+            className="bl-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              animation: "scaleIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
+            }}
+          >
             <div className="bl-modal-head">
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <FileText size={14} /> File a Complaint
@@ -591,6 +683,9 @@ export default function TrafficLookup() {
               <button
                 className="bl-modal-close"
                 onClick={() => setShowComplaint(false)}
+                style={{ transition: "transform 0.1s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
               >
                 &times;
               </button>
@@ -625,6 +720,15 @@ export default function TrafficLookup() {
                     }
                     required
                     placeholder="Your full name"
+                    style={{ transition: "border 0.2s, box-shadow 0.2s" }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#2ad1ff";
+                      e.target.style.boxShadow = "0 0 0 2px rgba(42,209,255,0.2)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "";
+                      e.target.style.boxShadow = "";
+                    }}
                   />
                 </div>
                 <div className="form-group">
@@ -691,7 +795,17 @@ export default function TrafficLookup() {
                   type="button"
                   className="btn"
                   onClick={() => setShowComplaint(false)}
-                  style={{ background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#eef3ff",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                  }}
                 >
                   Cancel
                 </button>
@@ -699,7 +813,18 @@ export default function TrafficLookup() {
                   type="submit"
                   className="btn btn-cool"
                   disabled={complaintLoading}
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!complaintLoading) e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
                   <Send size={14} />{" "}
                   {complaintLoading ? "Submitting..." : "Submit Complaint"}
@@ -753,12 +878,48 @@ export default function TrafficLookup() {
               color: "inherit",
               cursor: "pointer",
               fontSize: 16,
+              transition: "transform 0.1s",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             &times;
           </button>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInRight {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+        @keyframes pulseGlow {
+          0% { box-shadow: 0 0 0 0 rgba(255,59,48,0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(255,59,48,0); }
+          100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); }
+        }
+        @keyframes rise {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </section>
   );
 }

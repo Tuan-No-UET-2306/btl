@@ -124,12 +124,16 @@ export default function AdminOperations() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            backdropFilter: "blur(4px)",
+            animation: "slideInDown 0.2s ease",
           }}
         >
           <span>{message}</span>
           <button
             onClick={() => setMessage("")}
-            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 16 }}
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 16, transition: "transform 0.1s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             &times;
           </button>
@@ -138,10 +142,10 @@ export default function AdminOperations() {
 
       {loading ? (
         <div style={{ display: "grid", gap: 12 }}>
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 60 }} />
-          <div className="skeleton" style={{ height: 60 }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.1s" }} />
+          <div className="skeleton" style={{ height: 60, animation: "pulse 1.2s infinite 0.2s" }} />
+          <div className="skeleton" style={{ height: 60, animation: "pulse 1.2s infinite 0.3s" }} />
         </div>
       ) : error ? (
         <div className="empty-state">
@@ -174,8 +178,20 @@ export default function AdminOperations() {
               </tr>
             </thead>
             <tbody>
-              {complaints.map((item) => (
-                <tr key={item.id}>
+              {complaints.map((item, idx) => (
+                <tr
+                  key={item.id}
+                  style={{
+                    transition: "background 0.2s, transform 0.1s",
+                    animation: `fadeInUp 0.25s ease ${idx * 0.03}s both`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
                   <td>
                     <strong style={{ fontSize: 12 }}>{item.case_id}</strong>
                   </td>
@@ -246,6 +262,15 @@ export default function AdminOperations() {
                               gap: 3,
                               padding: "4px 8px",
                               fontSize: 10,
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(46,213,115,0.3)";
+                              e.currentTarget.style.transform = "scale(1.02)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(46,213,115,0.15)";
+                              e.currentTarget.style.transform = "scale(1)";
                             }}
                           >
                             {processingId === item.id ? "..." : <CheckCircle size={10} />}
@@ -263,6 +288,15 @@ export default function AdminOperations() {
                               gap: 3,
                               padding: "4px 8px",
                               fontSize: 10,
+                              transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "rgba(255,107,107,0.3)";
+                              e.currentTarget.style.transform = "scale(1.02)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "rgba(255,107,107,0.15)";
+                              e.currentTarget.style.transform = "scale(1)";
                             }}
                           >
                             {processingId === item.id ? "..." : <XCircle size={10} />}
@@ -281,6 +315,15 @@ export default function AdminOperations() {
                           gap: 3,
                           padding: "4px 8px",
                           fontSize: 10,
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+                          e.currentTarget.style.transform = "scale(1.02)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                          e.currentTarget.style.transform = "scale(1)";
                         }}
                       >
                         <Gauge size={10} /> Edit Violation
@@ -296,13 +339,33 @@ export default function AdminOperations() {
 
       {/* Edit Violation Modal */}
       {editViolation && (
-        <div className="bl-modal-overlay" onClick={() => setEditViolation(null)}>
-          <div className="bl-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="bl-modal-overlay"
+          onClick={() => setEditViolation(null)}
+          style={{
+            animation: "fadeIn 0.2s ease",
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          <div
+            className="bl-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              animation: "scaleIn 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1)",
+              transition: "transform 0.2s",
+            }}
+          >
             <div className="bl-modal-head">
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Gauge size={14} /> Edit Violation
               </span>
-              <button className="bl-modal-close" onClick={() => setEditViolation(null)}>
+              <button
+                className="bl-modal-close"
+                onClick={() => setEditViolation(null)}
+                style={{ transition: "transform 0.1s" }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              >
                 &times;
               </button>
             </div>
@@ -324,6 +387,15 @@ export default function AdminOperations() {
                       setEditForm((p) => ({ ...p, violation_type: e.target.value }))
                     }
                     placeholder="e.g. Speeding"
+                    style={{ transition: "border 0.2s, box-shadow 0.2s" }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#2ad1ff";
+                      e.target.style.boxShadow = "0 0 0 2px rgba(42,209,255,0.2)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "";
+                      e.target.style.boxShadow = "";
+                    }}
                   />
                 </div>
                 <div className="form-group">
@@ -336,6 +408,7 @@ export default function AdminOperations() {
                     onChange={(e) =>
                       setEditForm((p) => ({ ...p, points_deducted: e.target.value }))
                     }
+                    style={{ transition: "border 0.2s, box-shadow 0.2s" }}
                   />
                 </div>
                 <div className="form-group">
@@ -369,7 +442,17 @@ export default function AdminOperations() {
                   type="button"
                   className="btn"
                   onClick={() => setEditViolation(null)}
-                  style={{ background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#eef3ff",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                  }}
                 >
                   Cancel
                 </button>
@@ -377,15 +460,59 @@ export default function AdminOperations() {
                   type="submit"
                   className="btn btn-cool"
                   disabled={editLoading}
-                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    transition: "all 0.2s",
+                  }}
                 >
-                  <RefreshCw size={14} /> {editLoading ? "Updating..." : "Update"}
+                  <RefreshCw size={14} className={editLoading ? "spin-animation" : ""} /> {editLoading ? "Updating..." : "Update"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slideInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes pulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+        .spin-animation {
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </section>
   );
 }

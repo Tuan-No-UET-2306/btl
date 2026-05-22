@@ -48,9 +48,9 @@ export default function ComplaintHistory() {
 
       {loading ? (
         <div style={{ display: "grid", gap: 12, padding: 12 }}>
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.1s" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.2s" }} />
         </div>
       ) : error ? (
         <div className="empty-state">
@@ -77,10 +77,22 @@ export default function ComplaintHistory() {
               </tr>
             </thead>
             <tbody>
-              {complaints.map((c) => {
+              {complaints.map((c, idx) => {
                 const st = statusStyle(c.status);
                 return (
-                  <tr key={c.id}>
+                  <tr
+                    key={c.id}
+                    style={{
+                      transition: "background 0.2s",
+                      animation: `fadeInUp 0.25s ease ${idx * 0.05}s both`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                  >
                     <td>
                       <strong>{c.case_id}</strong>
                     </td>
@@ -105,6 +117,7 @@ export default function ComplaintHistory() {
                           background: st.bg,
                           color: st.color,
                           border: `1px solid ${st.bg.replace("0.12", "0.3")}`,
+                          transition: "all 0.2s",
                         }}
                       >
                         {st.label}
@@ -117,6 +130,24 @@ export default function ComplaintHistory() {
           </table>
         </div>
       )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes pulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+      `}</style>
     </section>
   );
 }
