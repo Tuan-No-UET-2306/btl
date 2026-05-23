@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models.models import DetectionHistory
+from ..models.models import BlacklistedPlate, DetectionHistory, UploadedVideo
 
 
 class DetectionRepository:
@@ -134,6 +134,20 @@ class DetectionRepository:
         this_week = base_query.filter(DetectionHistory.created_at >= week_start).count()
         blacklisted = base_query.filter(DetectionHistory.is_blacklisted == True).count()
 
+        # Count unique plates in BlacklistedPlate table (overall, not user-specific)
+        blacklist_count = self.db.query(func.count(BlacklistedPlate.id)).scalar() or 0
+
+        # Count videos that are queued or processing (in pipeline, not yet completed)
+        video_queue_count = (
+            self.db.query(func.count(UploadedVideo.id))
+            .filter(
+                UploadedVideo.user_id == user_id,
+                UploadedVideo.status.in_(["queued", "processing", "ready"]),
+            )
+            .scalar()
+            or 0
+        )
+
         # Top 10 plates for this user
         top_plates = (
             self.db.query(
@@ -172,6 +186,8 @@ class DetectionRepository:
             "today": today,
             "this_week": this_week,
             "blacklisted": blacklisted,
+            "blacklist_count": blacklist_count,
+            "video_queue_count": video_queue_count,
             "top_plates": [
                 {"plate_number": p[0], "count": p[1]} for p in top_plates
             ],
