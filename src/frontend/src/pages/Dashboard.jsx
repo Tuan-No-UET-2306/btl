@@ -9,25 +9,30 @@ export default function Dashboard() {
     today: 0,
     this_week: 0,
     blacklisted: 0,
+    blacklist_count: 0,
+    video_queue_count: 0,
     top_plates: [],
     daily_counts: [],
   });
   const [recentVideos, setRecentVideos] = useState([]);
   const loadData = async (activeFlag) => {
-    const [videos, detections, detStats] = await Promise.all([
-      videoApi.list().catch(() => []),
-      detectionApi.list().catch(() => []),
+    // Use stats endpoint for aggregate counts and extra data,
+    // then fetch recent videos separately for the list.
+    const [detStats, videos] = await Promise.all([
       detectionApi.stats().catch(() => null),
+      videoApi.list().catch(() => []),
     ]);
 
     if (!activeFlag.current) return;
 
     setStats({
       videos: videos.length,
-      detections: detections.length,
+      detections: detStats?.total || 0,
       today: detStats?.today || 0,
       this_week: detStats?.this_week || 0,
       blacklisted: detStats?.blacklisted || 0,
+      blacklist_count: detStats?.blacklist_count || 0,
+      video_queue_count: detStats?.video_queue_count || 0,
       top_plates: detStats?.top_plates || [],
       daily_counts: detStats?.daily_counts || [],
     });
@@ -48,8 +53,8 @@ export default function Dashboard() {
     { title: "Detections Today", value: stats.today, meta: "Today's events", icon: Activity, color: "#2ad1ff" },
     { title: "This Week", value: stats.this_week, meta: "Last 7 days", icon: BarChart3, color: "#6f89ff" },
     { title: "Total Detections", value: stats.detections, meta: "All time", icon: Eye, color: "#f4b152" },
-    { title: "Blacklisted", value: stats.blacklisted, meta: "Flagged plates", icon: AlertTriangle, color: "#ff6b6b", accent: true },
-    { title: "Videos Queued", value: stats.videos, meta: "Uploads in pipeline", icon: Video, color: "#2ed573" },
+    { title: "Blacklisted Plates", value: stats.blacklist_count, meta: "Plates in blacklist", icon: AlertTriangle, color: "#ff6b6b", accent: true },
+    { title: "Videos in Queue", value: stats.video_queue_count, meta: "Uploads in pipeline", icon: Video, color: "#2ed573" },
   ];
 
   return (
