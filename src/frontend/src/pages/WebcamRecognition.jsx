@@ -119,7 +119,7 @@ export default function WebcamRecognition() {
 
   return (
     <section className="dashboard-body">
-      <div className="panel" style={{ minHeight: "auto" }}>
+      <div className="panel" style={{ transition: "all 0.2s" }}>
         <div className="panel-head">
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Camera size={14} /> Webcam Recognition
@@ -130,19 +130,65 @@ export default function WebcamRecognition() {
         {/* Controls */}
         <div className="webcam-controls">
           {!cameraOn ? (
-            <button className="btn btn-cool" onClick={startCamera} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              className="btn btn-cool"
+              onClick={startCamera}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "";
+              }}
+            >
               <Camera size={16} /> Open Camera
             </button>
           ) : (
             <>
-              <button className="btn btn-cool" onClick={handleCapture} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button
+                className="btn btn-cool"
+                onClick={handleCapture}
+                disabled={loading}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) e.currentTarget.style.transform = "scale(1.02)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
                 <ScanLine size={16} /> {loading ? "Recognizing..." : "Capture & Recognize"}
               </button>
               <button
                 className={`btn ${autoMode ? "btn-primary" : ""}`}
                 onClick={toggleAutoMode}
                 disabled={loading}
-                style={autoMode ? { display: "flex", alignItems: "center", gap: 6 } : { background: "rgba(255,255,255,0.08)", color: "#eef3ff", display: "flex", alignItems: "center", gap: 6 }}
+                style={{
+                  background: autoMode ? "#2ad1ff" : "rgba(255,255,255,0.08)",
+                  color: autoMode ? "#0a0f1a" : "#eef3ff",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
               >
                 {autoMode ? <Square size={14} /> : <Play size={14} />}
                 {autoMode ? "Stop Auto" : "Auto Capture"}
@@ -150,7 +196,11 @@ export default function WebcamRecognition() {
               {autoMode && (
                 <span className="webcam-interval">
                   Interval:
-                  <select value={interval} onChange={(e) => setInterval(Number(e.target.value))}>
+                  <select
+                    value={interval}
+                    onChange={(e) => setInterval(Number(e.target.value))}
+                    style={{ transition: "border 0.2s" }}
+                  >
                     <option value={1000}>1s</option>
                     <option value={2000}>2s</option>
                     <option value={3000}>3s</option>
@@ -161,7 +211,22 @@ export default function WebcamRecognition() {
               <button
                 className="btn"
                 onClick={stopCamera}
-                style={{ background: "rgba(255,60,60,0.2)", color: "#ff6b6b", display: "flex", alignItems: "center", gap: 6 }}
+                style={{
+                  background: "rgba(255,60,60,0.2)",
+                  color: "#ff6b6b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,60,60,0.4)";
+                  e.currentTarget.style.transform = "scale(1.02)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,60,60,0.2)";
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
               >
                 <CameraOff size={16} /> Close Camera
               </button>
@@ -171,7 +236,7 @@ export default function WebcamRecognition() {
 
         {/* Error */}
         {error && (
-          <div className="empty-state" style={{ color: "#ff6b6b" }}>
+          <div className="empty-state" style={{ color: "#ff6b6b", animation: "shake 0.3s ease" }}>
             <AlertCircle size={24} />
             <span>{error}</span>
           </div>
@@ -184,11 +249,11 @@ export default function WebcamRecognition() {
             className="webcam-video"
             playsInline
             muted
-            style={{ display: cameraOn ? "block" : "none" }}
+            style={{ display: cameraOn ? "block" : "none", transition: "opacity 0.3s" }}
           />
           <canvas ref={canvasRef} style={{ display: "none" }} />
           {!cameraOn && !error && (
-            <div className="webcam-placeholder">
+            <div className="webcam-placeholder" style={{ animation: "pulseGlow 2s infinite" }}>
               <div className="webcam-placeholder-icon">
                 <Camera size={48} />
               </div>
@@ -199,10 +264,17 @@ export default function WebcamRecognition() {
 
         {/* Result */}
         {result && (
-          <div className="lpr-results-list" style={{ marginTop: 16 }}>
+          <div className="lpr-results-list" style={{ marginTop: 16, animation: "slideInUp 0.25s ease" }}>
             {result.success && result.plates && result.plates.length > 0 ? (
               result.plates.map((plate, idx) => (
-                <div key={idx} className="lpr-result success">
+                <div
+                  key={idx}
+                  className="lpr-result success"
+                  style={{
+                    transition: "all 0.2s",
+                    animation: `fadeInRight 0.2s ease ${idx * 0.05}s both`,
+                  }}
+                >
                   <div className="lpr-result-icon">
                     <CheckCircle size={24} />
                   </div>
@@ -233,6 +305,39 @@ export default function WebcamRecognition() {
           {message || " "}
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeInRight {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+        @keyframes pulseGlow {
+          0% { opacity: 0.6; text-shadow: 0 0 0px rgba(42,209,255,0); }
+          50% { opacity: 1; text-shadow: 0 0 8px rgba(42,209,255,0.6); }
+          100% { opacity: 0.6; text-shadow: 0 0 0px rgba(42,209,255,0); }
+        }
+      `}</style>
     </section>
   );
 }

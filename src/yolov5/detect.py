@@ -31,9 +31,7 @@ from pathlib import Path
 
 import torch
 import torch.backends.cudnn as cudnn
-import tensorflow as tf
 from PIL import Image
-from skimage import transform
 import numpy as np
 
 FILE = Path(__file__).resolve()
@@ -109,22 +107,10 @@ def run(
     vid_path, vid_writer = [None] * bs, [None] * bs
     # print(source)
     # Load classification model
-    model_classification = tf.keras.models.load_model('C:/Users/Admin/Downloads/my_model_xception_13_5.h5')
-    target_names = ['fire', 'normal', 'war']
-    
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s in dataset:
-        clsStr = "Image: " + path + " Classes: "
-        np_image = Image.open(path)
-        np_image = np.array(np_image).astype('float32')/255
-        np_image = transform.resize(np_image, (240, 240, 3))
-        np_image = np.expand_dims(np_image, axis=0)
-        arr = model_classification.predict(np_image)[0]
-        lab = target_names[np.around(arr).argmax()]
-        clsStr += lab
-
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -171,7 +157,6 @@ def run(
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                    clsStr += (", " + names[int(c)])
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
@@ -211,8 +196,7 @@ def run(
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                         save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    vid_writer[i].write(im0)
-        print(clsStr)
+            vid_writer[i].write(im0)
         # Print time (inference-only)
         # LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
     

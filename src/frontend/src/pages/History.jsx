@@ -106,7 +106,7 @@ export default function History() {
   const hasActiveFilters = plateSearch || dateFrom || dateTo || blacklistFilter;
 
   return (
-    <section className="panel">
+    <section className="panel" style={{ transition: "all 0.2s" }}>
       <div className="panel-head">
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Table size={14} /> Detection history
@@ -123,7 +123,15 @@ export default function History() {
             placeholder="Search plate number..."
             value={plateSearch}
             onChange={(e) => setPlateSearch(e.target.value)}
-            style={{ paddingLeft: 30, width: "100%" }}
+            style={{ paddingLeft: 30, width: "100%", transition: "border 0.2s, box-shadow 0.2s" }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#2ad1ff";
+              e.target.style.boxShadow = "0 0 0 2px rgba(42,209,255,0.2)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "";
+              e.target.style.boxShadow = "";
+            }}
           />
         </div>
         <input
@@ -131,32 +139,77 @@ export default function History() {
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           title="From date"
+          style={{ transition: "border 0.2s" }}
         />
         <input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
           title="To date"
+          style={{ transition: "border 0.2s" }}
         />
         <select
           value={blacklistFilter}
           onChange={(e) => setBlacklistFilter(e.target.value)}
+          style={{ transition: "border 0.2s" }}
         >
           <option value="">All status</option>
           <option value="true">Blacklisted</option>
           <option value="false">Not blacklisted</option>
         </select>
-        <button className="btn btn-cool" type="submit" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <button
+          className="btn btn-cool"
+          type="submit"
+          style={{ display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
           <Search size={14} /> Search
         </button>
-        <button className="btn" type="button" onClick={handleReset} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}>
+        <button
+          className="btn"
+          type="button"
+          onClick={handleReset}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(255,255,255,0.08)",
+            color: "#eef3ff",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+          }}
+        >
           <RotateCcw size={14} /> Reset
         </button>
         <button
           className="btn"
           type="button"
           onClick={handleExport}
-          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", color: "#eef3ff" }}
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(255,255,255,0.08)",
+            color: "#eef3ff",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+          }}
         >
           <Download size={14} /> Export CSV
         </button>
@@ -164,14 +217,30 @@ export default function History() {
 
       {/* Active filters indicator */}
       {hasActiveFilters && (
-        <div style={{ padding: "0 0 10px 0", fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+        <div
+          style={{
+            padding: "0 0 10px 0",
+            fontSize: 11,
+            color: "var(--muted)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            animation: "fadeIn 0.2s",
+          }}
+        >
           <AlertCircle size={12} /> Filters active
         </div>
       )}
 
       {/* Bulk delete toolbar */}
       {selectedIds.length > 0 && (
-        <div className="bulk-bar">
+        <div
+          className="bulk-bar"
+          style={{
+            animation: "slideInDown 0.2s ease",
+            transition: "all 0.2s",
+          }}
+        >
           <span className="bulk-bar-info">{selectedIds.length} selected</span>
           <button
             className="btn"
@@ -185,6 +254,13 @@ export default function History() {
               display: "flex",
               alignItems: "center",
               gap: 6,
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              if (!deleting) e.currentTarget.style.background = "rgba(255,60,60,0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,60,60,0.2)";
             }}
           >
             <Trash2 size={14} /> {deleting ? "Deleting..." : `Delete (${selectedIds.length})`}
@@ -194,10 +270,10 @@ export default function History() {
 
       {loading ? (
         <div style={{ display: "grid", gap: 12, padding: 12 }}>
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
-          <div className="skeleton" style={{ height: 40 }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.1s" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.2s" }} />
+          <div className="skeleton" style={{ height: 40, animation: "pulse 1.2s infinite 0.3s" }} />
         </div>
       ) : error ? (
         <div className="empty-state">
@@ -232,10 +308,20 @@ export default function History() {
                 </tr>
               </thead>
               <tbody>
-                {detections.map((item) => (
+                {detections.map((item, idx) => (
                   <tr
                     key={item.id}
                     className={selectedIds.includes(item.id) ? "row-selected" : ""}
+                    style={{
+                      transition: "background 0.2s",
+                      animation: `fadeInUp 0.25s ease ${idx * 0.02}s both`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
                   >
                     <td>
                       <input
@@ -247,8 +333,16 @@ export default function History() {
                     <td><strong>{item.plate_number}</strong></td>
                     <td><span className="status-badge info">{formatConfidence(item.confidence)}</span></td>
                     <td>{item.vehicle_type || "-"}</td>
-                    <td>{item.is_blacklisted ? <span className="status-badge error">Yes</span> : <span className="status-badge success">No</span>}</td>
-                    <td style={{ fontSize: 12, color: "var(--muted)" }}>{new Date(item.created_at).toLocaleString()}</td>
+                    <td>
+                      {item.is_blacklisted ? (
+                        <span className="status-badge error">Yes</span>
+                      ) : (
+                        <span className="status-badge success">No</span>
+                      )}
+                    </td>
+                    <td style={{ fontSize: 12, color: "var(--muted)" }}>
+                      {new Date(item.created_at).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -257,7 +351,7 @@ export default function History() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="pagination">
+            <div className="pagination" style={{ animation: "fadeInUp 0.3s ease" }}>
               <span className="pagination-info">
                 Page {page} of {totalPages} ({total} items)
               </span>
@@ -266,6 +360,7 @@ export default function History() {
                   className="btn btn-sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  style={{ transition: "all 0.2s" }}
                 >
                   Prev
                 </button>
@@ -284,6 +379,7 @@ export default function History() {
                       <button
                         className={`btn btn-sm ${p === page ? "btn-cool" : ""}`}
                         onClick={() => setPage(p)}
+                        style={{ transition: "all 0.2s" }}
                       >
                         {p}
                       </button>
@@ -293,6 +389,7 @@ export default function History() {
                   className="btn btn-sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  style={{ transition: "all 0.2s" }}
                 >
                   Next
                 </button>
@@ -301,6 +398,26 @@ export default function History() {
           )}
         </>
       )}
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideInDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+      `}</style>
     </section>
   );
 }

@@ -53,7 +53,8 @@ def _select_onnx_device() -> str:
     except ImportError:
         return "cpu"
 
-    return "cuda" if "CUDAExecutionProvider" in onnxruntime.get_available_providers() else "cpu"
+    # Force CPU for now due to inconsistent CUDA availability in worker environment
+    return "cpu"
 
 
 class LocalOnnxPlateDetector:
