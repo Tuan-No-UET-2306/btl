@@ -46,6 +46,17 @@ def get_video_detail(
     return service.get_video_detail(video_id=video_id, user_id=current_user.id)
 
 
+@router.delete("/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_video(
+    video_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = VideoService(db)
+    service.delete_video(video_id=video_id, user_id=current_user.id)
+    return None
+
+
 @router.get("/{video_id}/detections", response_model=list[VideoDetectionResponse])
 def list_video_detections(
     video_id: int,

@@ -71,3 +71,7 @@ class VideoRepository:
             .filter(VideoDetection.uploaded_video_id == video_id)
             .count()
         )
+
+    def delete(self, video: UploadedVideo) -> None:
+        self.db.delete(video)
+        self.db.commit()
