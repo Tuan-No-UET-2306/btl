@@ -7,6 +7,7 @@ import {
   RotateCcw,
   ScanLine,
   Square,
+  Trash2,
   Upload,
   Video,
 } from "lucide-react";
@@ -328,6 +329,7 @@ export default function VideoRecognition() {
   const [videoDuration, setVideoDuration] = useState(0);
   const [processingVideo, setProcessingVideo] = useState(null);
   const [selectedPlateSummary, setSelectedPlateSummary] = useState(null);
+  const [deletingVideoId, setDeletingVideoId] = useState(null);
 
   const fileInputRef = useRef(null);
   const playingVideoRef = useRef(null);
@@ -797,6 +799,38 @@ export default function VideoRecognition() {
     scanSeqRef.current = 0;
   };
 
+  const handleDeleteVideo = async (video) => {
+    if (!video?.id || deletingVideoId) return;
+    const confirmed = window.confirm(
+      `Delete "${video.filename || "this video"}" and its detections?`
+    );
+    if (!confirmed) return;
+
+    setDeletingVideoId(video.id);
+    try {
+      await videoApi.delete(video.id);
+      setVideos((current) => current.filter((item) => item.id !== video.id));
+      if (selectedVideo?.id === video.id) {
+        setSelectedVideo(null);
+        setDetections([]);
+        setDetectionError("");
+        setSelectedPlateSummary(null);
+      }
+      if (playingVideo?.id === video.id) {
+        handleClosePlayer();
+      }
+      if (processingVideo?.id === video.id) {
+        stopProcessingPoll();
+        setProcessingVideo(null);
+      }
+      setUploadMessage("Saved video deleted.");
+    } catch (error) {
+      setUploadMessage(error.message || "Failed to delete saved video.");
+    } finally {
+      setDeletingVideoId(null);
+    }
+  };
+
   const handleReset = () => {
     setSelectedFile(null);
     setUploadMessage("");
@@ -882,8 +916,7 @@ export default function VideoRecognition() {
     if (detection.plate_number && detection.plate_number !== "UNKNOWN") {
       return detection.plate_number;
     }
-    const confidence = Number(detection.detect_confidence || detection.confidence) || 0;
-    return `PLATE ${Math.round(confidence * 100)}%`;
+    return "PLATE";
   };
 
   return (
@@ -1171,7 +1204,7 @@ export default function VideoRecognition() {
         </div>
       )}
 
-      <div className="panel" style={{ minHeight: "auto" }}>
+      <div className="panel" style={{ minHeight: "auto", order: selectedVideo ? 2 : 1 }}>
         <div className="panel-head">
           <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <Video size={14} /> Saved Videos
@@ -1214,7 +1247,7 @@ export default function VideoRecognition() {
                       {new Date(video.uploaded_at).toLocaleString()}
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <button
                           className="btn btn-sm btn-cool"
                           onClick={() => handleViewDetections(video)}
@@ -1239,6 +1272,29 @@ export default function VideoRecognition() {
                         >
                           <Play size={14} /> Play
                         </button>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => handleDeleteVideo(video)}
+                          disabled={deletingVideoId === video.id || video.status === "processing"}
+                          title={
+                            video.status === "processing"
+                              ? "Cannot delete while processing"
+                              : "Delete saved video"
+                          }
+                          style={{
+                            background: "rgba(255,60,60,0.16)",
+                            color: "#ff6b6b",
+                            opacity:
+                              deletingVideoId === video.id || video.status === "processing"
+                                ? 0.5
+                                : 1,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Trash2 size={14} /> Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1250,7 +1306,7 @@ export default function VideoRecognition() {
       </div>
 
       {selectedVideo && (
-        <div className="panel" style={{ minHeight: "auto" }}>
+        <div className="panel" style={{ minHeight: "auto", order: 1 }}>
           <div className="panel-head">
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Eye size={14} /> Detections - {selectedVideo.filename || "Untitled"}

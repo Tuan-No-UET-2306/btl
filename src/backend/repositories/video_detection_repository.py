@@ -59,3 +59,12 @@ class VideoDetectionRepository:
         self.db.commit()
         self.db.refresh(detection)
         return detection
+
+    def delete_by_video_id(self, video_id: int) -> int:
+        deleted = (
+            self.db.query(VideoDetection)
+            .filter(VideoDetection.uploaded_video_id == video_id)
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return deleted

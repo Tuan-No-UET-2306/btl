@@ -75,6 +75,29 @@ class VideoService:
             raise NotFoundException(detail=f"Video with id '{video_id}' not found")
         return self.video_detection_repo.find_by_video_id(video_id)
 
+    def delete_video(self, video_id: int, user_id: int) -> None:
+        """Delete a saved video row, its detections, and related MinIO objects when possible."""
+        video = self.video_repo.find_by_id_and_user(video_id, user_id)
+        if not video:
+            raise NotFoundException(detail=f"Video with id '{video_id}' not found")
+        if video.status == "processing":
+            raise BadRequestException(detail="Cannot delete a video while it is processing")
+
+        detections = self.video_detection_repo.find_by_video_id(video_id)
+        object_urls = [video.video_url, video.processed_video_url]
+        object_urls.extend(detection.image_url for detection in detections if detection.image_url)
+
+        self.video_detection_repo.delete_by_video_id(video_id)
+        self.video_repo.delete(video)
+
+        for object_url in object_urls:
+            minio_service.delete_url(object_url)
+
+        manager.broadcast_event(
+            {"event": "video_deleted", "video_id": video_id, "user_id": user_id},
+            video_id=video_id,
+        )
+
     def create_video_detection(
         self,
         video_id: int,

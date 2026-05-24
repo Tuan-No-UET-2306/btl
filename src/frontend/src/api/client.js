@@ -182,6 +182,11 @@ export const videoApi = {
     request(`/api/v1/videos/${videoId}`, {
       headers: { ...authHeaders() },
     }),
+  delete: (videoId) =>
+    request(`/api/v1/videos/${videoId}`, {
+      method: "DELETE",
+      headers: { ...authHeaders() },
+    }),
   queue: (videoId, data) =>
     request(`/api/v1/videos/${videoId}/queue`, {
       method: "POST",

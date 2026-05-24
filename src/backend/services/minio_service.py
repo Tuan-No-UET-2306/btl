@@ -4,6 +4,7 @@ from datetime import timedelta
 import logging
 import os
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
 from minio import Minio
@@ -108,6 +109,31 @@ class MinioService:
             object_name,
             expires=timedelta(days=7),
         )
+
+    def object_name_from_url(self, object_url: str | None) -> str | None:
+        if not object_url:
+            return None
+
+        parsed = urlparse(object_url)
+        path_parts = [unquote(part) for part in parsed.path.split("/") if part]
+        if MINIO_BUCKET not in path_parts:
+            return None
+
+        bucket_index = path_parts.index(MINIO_BUCKET)
+        object_parts = path_parts[bucket_index + 1 :]
+        return "/".join(object_parts) if object_parts else None
+
+    def delete_url(self, object_url: str | None) -> bool:
+        object_name = self.object_name_from_url(object_url)
+        if not object_name:
+            return False
+
+        try:
+            self.client.remove_object(MINIO_BUCKET, object_name)
+            return True
+        except Exception as exc:
+            logger.debug("Failed to delete MinIO object %s: %s", object_name, exc)
+            return False
 
 
 minio_service = MinioService()

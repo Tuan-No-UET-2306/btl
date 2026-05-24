@@ -20,7 +20,7 @@ from ..core.config import (
     VIDEO_OCR_IMAGE_SIZE,
     VIDEO_OCR_MODEL_PATH,
 )
-from .plate_format import normalize_license_plate
+from .plate_format import normalize_license_plate_compact
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +53,7 @@ def _select_onnx_device() -> str:
     except ImportError:
         return "cpu"
 
-    # Force CPU for now due to inconsistent CUDA availability in worker environment
-    return "cpu"
+    return "cuda" if "CUDAExecutionProvider" in onnxruntime.get_available_providers() else "cpu"
 
 
 class LocalOnnxPlateDetector:
@@ -118,11 +117,33 @@ class LocalOnnxPlateDetector:
                 "name": row.get("name", "plate"),
             }
             detection = self._to_plate_detection(prediction, width=width, height=height)
-            if detection and detection.confidence >= self.min_confidence:
+            if (
+                detection
+                and detection.confidence >= self.min_confidence
+                and self._is_reasonable_plate_box(detection.bbox, width, height)
+            ):
                 detections.append(detection)
 
         detections.sort(key=lambda item: item.confidence, reverse=True)
         return detections
+
+    @staticmethod
+    def _is_reasonable_plate_box(
+        bbox: tuple[int, int, int, int],
+        image_width: int,
+        image_height: int,
+    ) -> bool:
+        x1, y1, x2, y2 = bbox
+        width = x2 - x1
+        height = y2 - y1
+        if width < 14 or height < 6:
+            return False
+
+        area_ratio = (width * height) / max(1, image_width * image_height)
+        aspect_ratio = width / max(1, height)
+        if area_ratio < 0.00004 or area_ratio > 0.08:
+            return False
+        return 0.8 <= aspect_ratio <= 9.5
 
     @staticmethod
     def _confidence(prediction: dict[str, Any]) -> float:
@@ -319,7 +340,7 @@ class PlateOCRService:
             if ocr_df.empty:
                 return "", 0.0
 
-            plate_number = normalize_license_plate(self._merge_ocr_chars(ocr_df))
+            plate_number = normalize_license_plate_compact(self._merge_ocr_chars(ocr_df))
             confidence = float(ocr_df["confidence"].mean())
             return plate_number, confidence
         except Exception as exc:
