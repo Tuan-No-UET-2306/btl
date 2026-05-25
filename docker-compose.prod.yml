@@ -34,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: deploy/docker/backend.Dockerfile
-    image: lpr-backend:local
+    image: ${BACKEND_IMAGE:-lpr-backend:local}
     container_name: lpr_backend
     restart: unless-stopped
     env_file:
@@ -55,7 +55,7 @@ services:
         condition: service_started
 
   worker:
-    image: lpr-backend:local
+    image: ${BACKEND_IMAGE:-lpr-backend:local}
     container_name: lpr_worker
     restart: unless-stopped
     env_file:
@@ -83,7 +83,7 @@ services:
       dockerfile: deploy/docker/frontend.Dockerfile
       args:
         VITE_API_BASE: ${DOCKER_PUBLIC_APP_URL:-http://localhost:8080}
-    image: lpr-frontend:local
+    image: ${FRONTEND_IMAGE:-lpr-frontend:local}
     container_name: lpr_frontend
     restart: unless-stopped
 

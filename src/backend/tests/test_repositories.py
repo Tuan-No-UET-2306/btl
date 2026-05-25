@@ -57,41 +57,43 @@ class TestUserRepository:
 class TestDetectionRepository:
     """Tests for DetectionRepository."""
 
-    def test_create_detection(self, db_session: Session):
+    def test_create_detection(self, db_session: Session, sample_user: User):
         repo = DetectionRepository(db_session)
         detection = repo.create(
+            user_id=sample_user.id,
             plate_number="29A-123.45",
             confidence=0.95,
             image_url="http://test.com/img.jpg",
         )
         assert detection.id is not None
+        assert detection.user_id == sample_user.id
         assert detection.plate_number == "29A-123.45"
         assert detection.confidence == 0.95
 
-    def test_find_all(self, db_session: Session):
+    def test_find_all(self, db_session: Session, sample_user: User):
         repo = DetectionRepository(db_session)
-        repo.create(plate_number="29A-111.11", confidence=0.9)
-        repo.create(plate_number="29A-222.22", confidence=0.8)
-        detections = repo.find_all()
+        repo.create(user_id=sample_user.id, plate_number="29A-111.11", confidence=0.9)
+        repo.create(user_id=sample_user.id, plate_number="29A-222.22", confidence=0.8)
+        detections = repo.find_all(user_id=sample_user.id)
         assert len(detections) == 2
 
-    def test_find_by_id(self, db_session: Session):
+    def test_find_by_id(self, db_session: Session, sample_user: User):
         repo = DetectionRepository(db_session)
-        created = repo.create(plate_number="30B-333.33", confidence=0.85)
-        found = repo.find_by_id(created.id)
+        created = repo.create(user_id=sample_user.id, plate_number="30B-333.33", confidence=0.85)
+        found = repo.find_by_id(created.id, user_id=sample_user.id)
         assert found is not None
         assert found.plate_number == "30B-333.33"
 
-    def test_update_detection(self, db_session: Session):
+    def test_update_detection(self, db_session: Session, sample_user: User):
         repo = DetectionRepository(db_session)
-        created = repo.create(plate_number="29A-123.45", confidence=0.9)
+        created = repo.create(user_id=sample_user.id, plate_number="29A-123.45", confidence=0.9)
         updated = repo.update(created, plate_number="29A-999.99", confidence=0.99)
         assert updated.plate_number == "29A-999.99"
         assert updated.confidence == 0.99
 
-    def test_delete_detection(self, db_session: Session):
+    def test_delete_detection(self, db_session: Session, sample_user: User):
         repo = DetectionRepository(db_session)
-        created = repo.create(plate_number="29A-123.45", confidence=0.9)
+        created = repo.create(user_id=sample_user.id, plate_number="29A-123.45", confidence=0.9)
         repo.delete(created)
-        found = repo.find_by_id(created.id)
+        found = repo.find_by_id(created.id, user_id=sample_user.id)
         assert found is None

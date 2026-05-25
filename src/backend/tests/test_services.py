@@ -95,27 +95,34 @@ class TestUserService:
 class TestDetectionService:
     """Tests for DetectionService."""
 
-    def test_create_detection(self, db_session: Session):
+    def test_create_detection(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
         detection = service.create_detection(
+            user_id=sample_user.id,
             plate_number="29A-123.45",
             confidence=0.95,
         )
         assert detection.id is not None
+        assert detection.user_id == sample_user.id
         assert detection.plate_number == "29A-123.45"
 
-    def test_list_detections(self, db_session: Session):
+    def test_list_detections(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
-        service.create_detection(plate_number="29A-111.11", confidence=0.9)
-        service.create_detection(plate_number="29A-222.22", confidence=0.8)
-        detections = service.list_detections()
+        service.create_detection(user_id=sample_user.id, plate_number="29A-111.11", confidence=0.9)
+        service.create_detection(user_id=sample_user.id, plate_number="29A-222.22", confidence=0.8)
+        detections = service.list_detections(user_id=sample_user.id)
         assert len(detections) == 2
 
-    def test_update_detection(self, db_session: Session):
+    def test_update_detection(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
-        created = service.create_detection(plate_number="29A-123.45", confidence=0.9)
+        created = service.create_detection(
+            user_id=sample_user.id,
+            plate_number="29A-123.45",
+            confidence=0.9,
+        )
         updated = service.update_detection(
             detection_id=created.id,
+            user_id=sample_user.id,
             plate_number="29A-999.99",
             confidence=0.99,
             is_blacklisted=True,
@@ -123,37 +130,41 @@ class TestDetectionService:
         assert updated.plate_number == "29A-999.99"
         assert updated.is_blacklisted is True
 
-    def test_update_nonexistent(self, db_session: Session):
+    def test_update_nonexistent(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
         with pytest.raises(NotFoundException):
-            service.update_detection(detection_id=9999, confidence=0.5)
+            service.update_detection(detection_id=9999, user_id=sample_user.id, confidence=0.5)
 
-    def test_delete_detection(self, db_session: Session):
+    def test_delete_detection(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
-        created = service.create_detection(plate_number="29A-123.45", confidence=0.9)
-        service.delete_detection(created.id)
-        assert len(service.list_detections()) == 0
+        created = service.create_detection(
+            user_id=sample_user.id,
+            plate_number="29A-123.45",
+            confidence=0.9,
+        )
+        service.delete_detection(created.id, user_id=sample_user.id)
+        assert len(service.list_detections(user_id=sample_user.id)) == 0
 
-    def test_delete_nonexistent(self, db_session: Session):
+    def test_delete_nonexistent(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
         with pytest.raises(NotFoundException):
-            service.delete_detection(detection_id=9999)
+            service.delete_detection(detection_id=9999, user_id=sample_user.id)
 
-    def test_save_lpr_results(self, db_session: Session):
+    def test_save_lpr_results(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
         plates = [
             {"plate_number": "29A-123.45", "confidence": 0.95},
             {"plate_number": "30B-678.90", "confidence": 0.88},
         ]
-        saved = service.save_lpr_results(plates)
+        saved = service.save_lpr_results(sample_user.id, plates)
         assert len(saved) == 2
         assert saved[0].plate_number == "29A-123.45"
 
-    def test_save_lpr_results_empty_plate(self, db_session: Session):
+    def test_save_lpr_results_empty_plate(self, db_session: Session, sample_user: User):
         service = DetectionService(db_session)
         plates = [
             {"plate_number": "", "confidence": 0.0},
             {"plate_number": "29A-123.45", "confidence": 0.95},
         ]
-        saved = service.save_lpr_results(plates)
+        saved = service.save_lpr_results(sample_user.id, plates)
         assert len(saved) == 1  # Only the non-empty plate is saved

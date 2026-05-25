@@ -8,6 +8,20 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+import os
+
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_lpr.db")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
+os.environ.setdefault("MINIO_ENDPOINT", "localhost:9000")
+os.environ.setdefault("MINIO_ACCESS_KEY", "minioadmin")
+os.environ.setdefault("MINIO_SECRET_KEY", "minioadmin")
+os.environ.setdefault("MINIO_BUCKET", "uploaded-videos")
+os.environ.setdefault("MINIO_PUBLIC_URL", "http://localhost:9000")
+os.environ.setdefault("MINIO_SECURE", "false")
+os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/0")
+os.environ.setdefault("CELERY_BACKEND_URL", "redis://localhost:6379/0")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+
 from ..core.security import hash_password, create_access_token
 from ..main import app
 from ..models.database import Base
@@ -47,10 +61,14 @@ def db_session() -> Session:
 
 
 @pytest.fixture
-def client(db_session) -> TestClient:
+def client(db_session, monkeypatch) -> TestClient:
     """FastAPI test client with overridden DB dependency."""
     from ..api.dependencies import get_db
+    from .. import main as main_module
 
+    monkeypatch.setattr(main_module, "seed_admin_user", lambda: None)
+    monkeypatch.setattr(main_module.minio_service, "ensure_bucket", lambda: None)
+    monkeypatch.setattr(main_module.manager, "start_redis_listener", lambda: None)
     app.dependency_overrides[get_db] = lambda: db_session
     with TestClient(app) as c:
         yield c

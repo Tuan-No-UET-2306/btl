@@ -116,42 +116,42 @@ class TestDetectionsAPI:
 class TestUsersAPI:
     """Tests for /api/v1/users endpoints."""
 
-    def test_list_users(self, client: TestClient, auth_header: dict, sample_user):
-        response = client.get("/api/v1/users/", headers=auth_header)
+    def test_list_users(self, client: TestClient, admin_auth_header: dict, sample_user):
+        response = client.get("/api/v1/users/", headers=admin_auth_header)
         assert response.status_code == 200
         users = response.json()
         assert any(u["username"] == "testuser" for u in users)
 
-    def test_create_user(self, client: TestClient, auth_header: dict):
+    def test_create_user(self, client: TestClient, admin_auth_header: dict):
         response = client.post(
             "/api/v1/users/",
-            headers=auth_header,
+            headers=admin_auth_header,
             json={"username": "newadmin", "password": "pass", "role": "admin"},
         )
         assert response.status_code == 201
         assert response.json()["username"] == "newadmin"
 
-    def test_create_duplicate(self, client: TestClient, auth_header: dict, sample_user):
+    def test_create_duplicate(self, client: TestClient, admin_auth_header: dict, sample_user):
         response = client.post(
             "/api/v1/users/",
-            headers=auth_header,
+            headers=admin_auth_header,
             json={"username": "testuser", "password": "pass"},
         )
         assert response.status_code == 409
 
-    def test_update_user(self, client: TestClient, auth_header: dict, sample_user):
+    def test_update_user(self, client: TestClient, admin_auth_header: dict, sample_user):
         response = client.put(
             f"/api/v1/users/{sample_user.id}",
-            headers=auth_header,
+            headers=admin_auth_header,
             json={"username": "updateduser", "role": "admin"},
         )
         assert response.status_code == 200
         assert response.json()["username"] == "updateduser"
 
-    def test_delete_user(self, client: TestClient, auth_header: dict, sample_user):
+    def test_delete_user(self, client: TestClient, admin_auth_header: dict, sample_user):
         response = client.delete(
             f"/api/v1/users/{sample_user.id}",
-            headers=auth_header,
+            headers=admin_auth_header,
         )
         assert response.status_code == 204
 
@@ -160,14 +160,15 @@ class TestExceptionHandlers:
     """Test that global exception handlers return standardized responses."""
 
     def test_404_not_found(self, client: TestClient, auth_header: dict):
-        response = client.get("/api/v1/detections/99999", headers=auth_header)
+        response = client.delete("/api/v1/detections/99999", headers=auth_header)
         assert response.status_code == 404
 
     def test_401_unauthorized(self, client: TestClient):
         response = client.get("/api/v1/detections/")
         assert response.status_code == 401
         data = response.json()
-        assert "detail" in data  # FastAPI default 401 response
+        assert data["code"] == "http_error"
+        assert data["message"] == "Not authenticated"
 
     def test_validation_error(self, client: TestClient, auth_header: dict):
         response = client.post(
