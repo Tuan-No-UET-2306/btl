@@ -227,7 +227,60 @@ python scripts/detect_video.py \
 
 ---
 
-## 🛠️ 4. API Endpoints
+## 🔁 4. CI/CD với GitHub Actions
+
+Repo đã có workflow tại `.github/workflows/ci-cd.yml`.
+
+Pipeline chạy như sau:
+
+| Sự kiện | Việc thực hiện |
+|---|---|
+| Pull request | Chạy backend tests bằng pytest và build frontend |
+| Push vào `main` | Chạy test/build, sau đó build và push Docker images lên GHCR |
+
+Images được push lên:
+
+```text
+ghcr.io/OWNER/REPO/backend:<commit-sha>
+ghcr.io/OWNER/REPO/backend:latest
+ghcr.io/OWNER/REPO/frontend:<commit-sha>
+ghcr.io/OWNER/REPO/frontend:latest
+```
+
+### 4.1. Cấu hình trên GitHub
+
+Vào **Settings → Secrets and variables → Actions → Variables** và tạo:
+
+```text
+PUBLIC_API_BASE_URL=https://your-domain.com
+```
+
+Nếu chưa có domain production, có thể để trống; workflow sẽ dùng `http://localhost:8000` khi build frontend.
+
+Không cần tạo secret cho GHCR nếu dùng package trong cùng repo. Workflow dùng sẵn `GITHUB_TOKEN`.
+
+### 4.2. Deploy từ image GHCR lên server Docker Compose
+
+Trên server, sau khi clone repo và tạo `.env` production, set image từ GHCR:
+
+```bash
+export BACKEND_IMAGE=ghcr.io/OWNER/REPO/backend:latest
+export FRONTEND_IMAGE=ghcr.io/OWNER/REPO/frontend:latest
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Nếu package GHCR đang private, đăng nhập trước:
+
+```bash
+echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+`YOUR_GITHUB_PAT` cần quyền `read:packages`.
+
+---
+
+## 🛠️ 5. API Endpoints
 
 | Method | Endpoint | Mô tả | Auth |
 |--------|----------|-------|------|
@@ -260,7 +313,7 @@ curl -X POST http://localhost:8000/api/v1/lpr/recognize \
 ---
 
 
-## 🧠 5. Models
+## 🧠 6. Models
 
 Các model pre-trained được đặt tại `src/models/`:
 
@@ -273,7 +326,7 @@ Các model pre-trained được đặt tại `src/models/`:
 
 ---
 
-## 🐳 6. Docker Compose Services
+## 🐳 7. Docker Compose Services
 
 | Service | Port | Mô tả |
 |---------|------|-------|
