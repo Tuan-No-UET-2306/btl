@@ -330,6 +330,7 @@ export default function VideoRecognition() {
   const [processingVideo, setProcessingVideo] = useState(null);
   const [selectedPlateSummary, setSelectedPlateSummary] = useState(null);
   const [deletingVideoId, setDeletingVideoId] = useState(null);
+  const [deletingDetectionIds, setDeletingDetectionIds] = useState(() => new Set());
 
   const fileInputRef = useRef(null);
   const playingVideoRef = useRef(null);
@@ -828,6 +829,80 @@ export default function VideoRecognition() {
       setUploadMessage(error.message || "Failed to delete saved video.");
     } finally {
       setDeletingVideoId(null);
+    }
+  };
+
+  const refreshVideoDetections = async (videoId) => {
+    const video = videos.find((item) => item.id === videoId) || selectedVideo;
+    if (video) {
+      await handleViewDetections(video);
+    }
+    await loadVideos();
+  };
+
+  const markDetectionsDeleting = (ids, deleting) => {
+    setDeletingDetectionIds((current) => {
+      const next = new Set(current);
+      ids.forEach((id) => {
+        if (deleting) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      });
+      return next;
+    });
+  };
+
+  const removeDetectionsFromPlayback = (ids) => {
+    const idSet = new Set(ids);
+    setPlaybackDetections((current) => current.filter((item) => !idSet.has(item.id)));
+  };
+
+  const handleDeleteDetection = async (detection) => {
+    if (!selectedVideo?.id || !detection?.id || deletingDetectionIds.has(detection.id)) return;
+    const label = detection.plate_number || "this detection";
+    const confirmed = window.confirm(`Delete detection "${label}" from this video?`);
+    if (!confirmed) return;
+
+    markDetectionsDeleting([detection.id], true);
+    try {
+      await videoApi.deleteDetection(selectedVideo.id, detection.id);
+      removeDetectionsFromPlayback([detection.id]);
+      setSelectedPlateSummary(null);
+      setUploadMessage("Detection deleted.");
+      await refreshVideoDetections(selectedVideo.id);
+    } catch (error) {
+      setUploadMessage(error.message || "Failed to delete detection.");
+    } finally {
+      markDetectionsDeleting([detection.id], false);
+    }
+  };
+
+  const handleDeletePlateSummary = async (summary, event) => {
+    event.stopPropagation();
+    if (!selectedVideo?.id || !summary?.plate_number) return;
+
+    const detectionIds = summary.detections.map((item) => item.id);
+    const busy = detectionIds.some((id) => deletingDetectionIds.has(id));
+    if (busy) return;
+
+    const confirmed = window.confirm(
+      `Delete all ${summary.count} detection event(s) for "${summary.plate_number}"?`
+    );
+    if (!confirmed) return;
+
+    markDetectionsDeleting(detectionIds, true);
+    try {
+      await videoApi.deleteDetectionsByPlate(selectedVideo.id, summary.plate_number);
+      removeDetectionsFromPlayback(detectionIds);
+      setSelectedPlateSummary(null);
+      setUploadMessage(`Deleted "${summary.plate_number}" detections.`);
+      await refreshVideoDetections(selectedVideo.id);
+    } catch (error) {
+      setUploadMessage(error.message || "Failed to delete plate detections.");
+    } finally {
+      markDetectionsDeleting(detectionIds, false);
     }
   };
 
@@ -1336,43 +1411,68 @@ export default function VideoRecognition() {
                       <th>Events</th>
                       <th>First Seen</th>
                       <th>Blacklist</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cachedPlateSummaries.map((summary) => (
-                      <tr
-                        key={normalizePlateKey(summary.plate_number)}
-                        className={
-                          selectedPlateSummary?.plate_number === summary.plate_number
-                            ? "row-selected"
-                            : ""
-                        }
-                        onClick={() => setSelectedPlateSummary(summary)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <td>
-                          <strong>{summary.plate_number}</strong>
-                        </td>
-                        <td>
-                          <span className="status-badge info">
-                            {Math.round(summary.confidence * 100)}%
-                          </span>
-                        </td>
-                        <td>{summary.count}</td>
-                        <td style={{ fontSize: 12, color: "var(--muted)" }}>
-                          {typeof summary.first_timestamp_seconds === "number"
-                            ? `${summary.first_timestamp_seconds.toFixed(1)}s`
-                            : "-"}
-                        </td>
-                        <td>
-                          {summary.is_blacklisted ? (
-                            <span className="status-badge error">Blacklisted</span>
-                          ) : (
-                            <span className="status-badge success">Clear</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {cachedPlateSummaries.map((summary) => {
+                      const summaryDeleting = summary.detections.some((item) =>
+                        deletingDetectionIds.has(item.id)
+                      );
+
+                      return (
+                        <tr
+                          key={normalizePlateKey(summary.plate_number)}
+                          className={
+                            selectedPlateSummary?.plate_number === summary.plate_number
+                              ? "row-selected"
+                              : ""
+                          }
+                          onClick={() => setSelectedPlateSummary(summary)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <td>
+                            <strong>{summary.plate_number}</strong>
+                          </td>
+                          <td>
+                            <span className="status-badge info">
+                              {Math.round(summary.confidence * 100)}%
+                            </span>
+                          </td>
+                          <td>{summary.count}</td>
+                          <td style={{ fontSize: 12, color: "var(--muted)" }}>
+                            {typeof summary.first_timestamp_seconds === "number"
+                              ? `${summary.first_timestamp_seconds.toFixed(1)}s`
+                              : "-"}
+                          </td>
+                          <td>
+                            {summary.is_blacklisted ? (
+                              <span className="status-badge error">Blacklisted</span>
+                            ) : (
+                              <span className="status-badge success">Clear</span>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-sm"
+                              onClick={(event) => handleDeletePlateSummary(summary, event)}
+                              disabled={summaryDeleting}
+                              title="Delete all events for this plate"
+                              style={{
+                                background: "rgba(255,60,60,0.16)",
+                                color: "#ff6b6b",
+                                opacity: summaryDeleting ? 0.5 : 1,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Trash2 size={14} /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1406,6 +1506,7 @@ export default function VideoRecognition() {
                       <th>Timestamp</th>
                       <th>Blacklisted</th>
                       <th>Detected At</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1434,6 +1535,24 @@ export default function VideoRecognition() {
                         </td>
                         <td style={{ fontSize: 12, color: "var(--muted)" }}>
                           {new Date(det.created_at).toLocaleString()}
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => handleDeleteDetection(det)}
+                            disabled={deletingDetectionIds.has(det.id)}
+                            title="Delete this detection"
+                            style={{
+                              background: "rgba(255,60,60,0.16)",
+                              color: "#ff6b6b",
+                              opacity: deletingDetectionIds.has(det.id) ? 0.5 : 1,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
                         </td>
                       </tr>
                     ))}

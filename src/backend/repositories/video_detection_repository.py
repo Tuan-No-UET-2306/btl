@@ -18,11 +18,31 @@ class VideoDetectionRepository:
     def find_by_id(self, detection_id: int) -> Optional[VideoDetection]:
         return self.db.query(VideoDetection).filter(VideoDetection.id == detection_id).first()
 
+    def find_by_id_and_video(self, detection_id: int, video_id: int) -> Optional[VideoDetection]:
+        return (
+            self.db.query(VideoDetection)
+            .filter(
+                VideoDetection.id == detection_id,
+                VideoDetection.uploaded_video_id == video_id,
+            )
+            .first()
+        )
+
     def find_by_video_id(self, video_id: int) -> list[VideoDetection]:
         return (
             self.db.query(VideoDetection)
             .filter(VideoDetection.uploaded_video_id == video_id)
             .order_by(VideoDetection.id.desc())
+            .all()
+        )
+
+    def find_by_video_plate(self, video_id: int, plate_number: str) -> list[VideoDetection]:
+        return (
+            self.db.query(VideoDetection)
+            .filter(
+                VideoDetection.uploaded_video_id == video_id,
+                VideoDetection.plate_number == plate_number,
+            )
             .all()
         )
 
@@ -64,6 +84,22 @@ class VideoDetectionRepository:
         deleted = (
             self.db.query(VideoDetection)
             .filter(VideoDetection.uploaded_video_id == video_id)
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return deleted
+
+    def delete(self, detection: VideoDetection) -> None:
+        self.db.delete(detection)
+        self.db.commit()
+
+    def delete_by_video_plate(self, video_id: int, plate_number: str) -> int:
+        deleted = (
+            self.db.query(VideoDetection)
+            .filter(
+                VideoDetection.uploaded_video_id == video_id,
+                VideoDetection.plate_number == plate_number,
+            )
             .delete(synchronize_session=False)
         )
         self.db.commit()

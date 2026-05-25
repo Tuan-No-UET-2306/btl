@@ -75,6 +75,65 @@ class VideoService:
             raise NotFoundException(detail=f"Video with id '{video_id}' not found")
         return self.video_detection_repo.find_by_video_id(video_id)
 
+    def delete_video_detection(self, video_id: int, detection_id: int, user_id: int) -> int:
+        """Delete one detection from a user's video and return the remaining count."""
+        video = self.video_repo.find_by_id_and_user(video_id, user_id)
+        if not video:
+            raise NotFoundException(detail=f"Video with id '{video_id}' not found")
+
+        detection = self.video_detection_repo.find_by_id_and_video(detection_id, video_id)
+        if not detection:
+            raise NotFoundException(detail=f"Detection with id '{detection_id}' not found")
+
+        image_url = detection.image_url
+        self.video_detection_repo.delete(detection)
+        minio_service.delete_url(image_url)
+        remaining = self.video_repo.get_detections_count(video_id)
+
+        manager.broadcast_event(
+            {
+                "event": "video_detection_deleted",
+                "video_id": video_id,
+                "detection_id": detection_id,
+                "detections_count": remaining,
+            },
+            video_id=video_id,
+        )
+        return remaining
+
+    def delete_video_detections_by_plate(
+        self,
+        video_id: int,
+        plate_number: str,
+        user_id: int,
+    ) -> tuple[int, int]:
+        """Delete all detections for one plate string in a user's video."""
+        video = self.video_repo.find_by_id_and_user(video_id, user_id)
+        if not video:
+            raise NotFoundException(detail=f"Video with id '{video_id}' not found")
+
+        detections = self.video_detection_repo.find_by_video_plate(video_id, plate_number)
+        if not detections:
+            raise NotFoundException(detail=f"Plate '{plate_number}' not found in this video")
+
+        image_urls = [detection.image_url for detection in detections if detection.image_url]
+        deleted = self.video_detection_repo.delete_by_video_plate(video_id, plate_number)
+        for image_url in image_urls:
+            minio_service.delete_url(image_url)
+
+        remaining = self.video_repo.get_detections_count(video_id)
+        manager.broadcast_event(
+            {
+                "event": "video_plate_detections_deleted",
+                "video_id": video_id,
+                "plate_number": plate_number,
+                "deleted": deleted,
+                "detections_count": remaining,
+            },
+            video_id=video_id,
+        )
+        return deleted, remaining
+
     def delete_video(self, video_id: int, user_id: int) -> None:
         """Delete a saved video row, its detections, and related MinIO objects when possible."""
         video = self.video_repo.find_by_id_and_user(video_id, user_id)

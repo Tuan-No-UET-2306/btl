@@ -1,0 +1,105 @@
+services:
+  redis:
+    image: redis:7
+    container_name: lpr_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - lpr_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: lpr_minio
+    restart: unless-stopped
+    ports:
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - lpr_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/docker/backend.Dockerfile
+    image: lpr-backend:local
+    container_name: lpr_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      CORS_ORIGINS: ${DOCKER_CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_URL: ${DOCKER_MINIO_PUBLIC_URL:-http://localhost:8080/files}
+      MINIO_PUBLIC_READ: ${MINIO_PUBLIC_READ:-true}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker:
+    image: lpr-backend:local
+    container_name: lpr_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_URL: ${DOCKER_MINIO_PUBLIC_URL:-http://localhost:8080/files}
+      MINIO_PUBLIC_READ: ${MINIO_PUBLIC_READ:-true}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_BACKEND_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+    command: celery -A src.backend.tasks.celery_app:celery_app worker --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      backend:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+      args:
+        VITE_API_BASE: ${DOCKER_PUBLIC_APP_URL:-http://localhost:8080}
+    image: lpr-frontend:local
+    container_name: lpr_frontend
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: lpr_nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-8080}:80"
+    volumes:
+      - ./deploy/nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - minio
+
+volumes:
+  lpr_redis_data:
+  lpr_minio_data:
