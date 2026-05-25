@@ -19,12 +19,22 @@ class ConnectionManager:
         self._redis_client = None
         self._redis_listener_task: asyncio.Task | None = None
 
+    def _update_ws_gauge(self) -> None:
+        """Update the Prometheus gauge with the current number of WebSocket connections."""
+        try:
+            from ..main import ACTIVE_WS_CONNECTIONS as _gauge
+            total = len(self.active_connections) + sum(len(v) for v in self.video_connections.values())
+            _gauge.set(total)
+        except ImportError:
+            pass  # metrics module not available (e.g. during testing)
+
     async def connect(self, websocket: WebSocket, video_id: int | None = None) -> None:
         await websocket.accept()
         if video_id is None:
             self.active_connections.add(websocket)
-            return
-        self.video_connections.setdefault(video_id, set()).add(websocket)
+        else:
+            self.video_connections.setdefault(video_id, set()).add(websocket)
+        self._update_ws_gauge()
 
     def disconnect(self, websocket: WebSocket, video_id: int | None = None) -> None:
         if video_id is None:
@@ -35,6 +45,7 @@ class ConnectionManager:
                 connections.discard(websocket)
                 if not connections:
                     self.video_connections.pop(video_id, None)
+        self._update_ws_gauge()
 
     def _cleanup(self, websocket: WebSocket) -> None:
         self.active_connections.discard(websocket)

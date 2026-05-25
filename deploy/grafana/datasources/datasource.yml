@@ -1,0 +1,15 @@
+# ---------------------------------------------------------------------------
+# Grafana data source provisioning – Prometheus
+# This file tells Grafana to auto-configure the Prometheus data source
+# on startup, so the LPR dashboard works out of the box.
+# ---------------------------------------------------------------------------
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    is_default: true
+    editable: false
+    version: 1
