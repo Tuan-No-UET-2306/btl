@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ import cv2
 import requests
 
 from ..core.config import (
+    MINIO_BUCKET,
     VIDEO_FLUSH_MIN_OCR_CONFIDENCE,
     VIDEO_PROCESS_EVERY_N_FRAMES,
     VIDEO_PROCESS_MAX_FRAMES,
@@ -821,20 +823,72 @@ class ProcessVideoTask:
 
     @staticmethod
     def _upload_processed_video(video_id: int, output_path: str) -> str | None:
+        mp4_path = ProcessVideoTask._transcode_to_mp4(output_path)
+        upload_path = mp4_path or output_path
+        filename = f"video_{video_id}_processed.mp4" if mp4_path else f"video_{video_id}_processed.webm"
+        content_type = "video/mp4" if mp4_path else "video/webm"
+
         try:
-            with open(output_path, "rb") as file:
+            with open(upload_path, "rb") as file:
                 data = file.read()
             if not data:
                 return None
             return minio_service.upload_bytes(
                 data,
-                filename=f"video_{video_id}_processed.webm",
-                content_type="video/webm",
+                filename=filename,
+                content_type=content_type,
                 prefix="processed-videos",
             )
         except Exception as exc:
             logger.warning("Failed to upload processed video: %s", exc, exc_info=True)
             return None
+        finally:
+            if mp4_path:
+                try:
+                    os.remove(mp4_path)
+                except OSError:
+                    pass
+
+    @staticmethod
+    def _transcode_to_mp4(output_path: str) -> str | None:
+        fd, mp4_path = tempfile.mkstemp(prefix="lpr_processed_", suffix=".mp4")
+        os.close(fd)
+        os.remove(mp4_path)
+
+        command = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            output_path,
+            "-an",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            mp4_path,
+        ]
+
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True)
+            if os.path.getsize(mp4_path) > 0:
+                return mp4_path
+        except Exception as exc:
+            logger.warning("Failed to transcode processed video to MP4: %s", exc)
+
+        try:
+            os.remove(mp4_path)
+        except OSError:
+            pass
+        return None
 
     @staticmethod
     def _serialize_detection(detection: VideoDetection) -> dict[str, Any]:
@@ -863,6 +917,19 @@ class ProcessVideoTask:
         suffix = Path(parsed.path).suffix or ".mp4"
         fd, temp_path = tempfile.mkstemp(prefix="lpr_video_", suffix=suffix)
         os.close(fd)
+
+        object_name = minio_service.object_name_from_url(video_url)
+        if object_name:
+            response = minio_service.client.get_object(MINIO_BUCKET, object_name)
+            try:
+                with open(temp_path, "wb") as file:
+                    for chunk in response.stream(1024 * 1024):
+                        if chunk:
+                            file.write(chunk)
+                return temp_path, True
+            finally:
+                response.close()
+                response.release_conn()
 
         with requests.get(video_url, stream=True, timeout=(10, 120)) as response:
             response.raise_for_status()

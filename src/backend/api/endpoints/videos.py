@@ -67,6 +67,38 @@ def list_video_detections(
     return service.list_video_detections(video_id=video_id, user_id=current_user.id)
 
 
+@router.delete("/{video_id}/detections/by-plate/{plate_number}")
+def delete_video_detections_by_plate(
+    video_id: int,
+    plate_number: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = VideoService(db)
+    deleted, remaining = service.delete_video_detections_by_plate(
+        video_id=video_id,
+        plate_number=plate_number,
+        user_id=current_user.id,
+    )
+    return {"deleted": deleted, "detections_count": remaining, "success": True}
+
+
+@router.delete("/{video_id}/detections/{detection_id}")
+def delete_video_detection(
+    video_id: int,
+    detection_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = VideoService(db)
+    remaining = service.delete_video_detection(
+        video_id=video_id,
+        detection_id=detection_id,
+        user_id=current_user.id,
+    )
+    return {"deleted": 1, "detections_count": remaining, "success": True}
+
+
 @router.post(
     "/{video_id}/detections",
     response_model=VideoDetectionResponse,

@@ -171,13 +171,26 @@ export const lprApi = {
 
 export const videoApi = {
   list: () =>
-    request("/api/v1/videos", {
+    request("/api/v1/videos/", {
       headers: { ...authHeaders() },
     }),
   detections: (videoId) =>
     request(`/api/v1/videos/${videoId}/detections`, {
       headers: { ...authHeaders() },
     }),
+  deleteDetection: (videoId, detectionId) =>
+    request(`/api/v1/videos/${videoId}/detections/${detectionId}`, {
+      method: "DELETE",
+      headers: { ...authHeaders() },
+    }),
+  deleteDetectionsByPlate: (videoId, plateNumber) =>
+    request(
+      `/api/v1/videos/${videoId}/detections/by-plate/${encodeURIComponent(plateNumber)}`,
+      {
+        method: "DELETE",
+        headers: { ...authHeaders() },
+      }
+    ),
   detail: (videoId) =>
     request(`/api/v1/videos/${videoId}`, {
       headers: { ...authHeaders() },
@@ -196,7 +209,7 @@ export const videoApi = {
   upload: (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    return request("/api/v1/videos", {
+    return request("/api/v1/videos/", {
       method: "POST",
       headers: { ...authHeaders() },
       body: formData,
@@ -206,11 +219,11 @@ export const videoApi = {
 
 export const blacklistApi = {
   list: () =>
-    request("/api/v1/blacklist", {
+    request("/api/v1/blacklist/", {
       headers: { ...authHeaders() },
     }),
   create: (data) =>
-    request("/api/v1/blacklist", {
+    request("/api/v1/blacklist/", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(data),
