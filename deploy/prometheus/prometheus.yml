@@ -29,11 +29,7 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - "host.docker.internal:8000"  # local development (Docker Desktop)
-          - "backend:8000"               # docker-compose service name
-    # Fallback: try both since only one will respond in a given setup
-    # Prometheus will mark unreachable targets as DOWN but keep scraping
-    # the reachable one.
+          - "backend:8000"  # docker-compose service name
 
   # Node exporter (optional – if you want host-level metrics)
   # - job_name: "node"

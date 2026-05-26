@@ -46,7 +46,7 @@ groups:
       # Backend unavailable – Prometheus cannot scrape /metrics
       # ---------------------------------------------------------------
       - alert: BackendUnavailable
-        expr: up{job="lpr-backend"} == 0
+        expr: up{job="lpr-backend", instance="backend:8000"} == 0
         for: 1m
         labels:
           severity: critical

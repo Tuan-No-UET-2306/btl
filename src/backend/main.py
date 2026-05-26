@@ -4,9 +4,9 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY, CONTENT_TYPE_LATEST
 from prometheus_fastapi_instrumentator import Instrumentator
 import psutil
 from sqlalchemy.orm import Session
@@ -208,7 +208,7 @@ def root():
 @app.get("/metrics")
 def metrics():
     """Expose Prometheus metrics."""
-    return generate_latest(REGISTRY)
+    return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
 # ---------------------------------------------------------------------------
