@@ -315,8 +315,6 @@ Dashboard Grafana được cấu hình sẵn trong:
 deploy/grafana/dashboards/lpr_dashboard.json
 ```
 
-Chi tiết xem thêm [MONITORING.md](./MONITORING.md).
-
 ## Kiểm thử
 
 Backend:
@@ -358,8 +356,5 @@ Pipeline hiện có:
 - Backup database và object storage định kỳ.
 
 ## Tài liệu liên quan
-
-- [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-- [MONITORING.md](./MONITORING.md)
 - [sort/README.md](./sort/README.md)
 - [src/yolov5/README.md](./src/yolov5/README.md)
