@@ -1,0 +1,71 @@
+# ---------------------------------------------------------------------------
+# Prometheus alerting rules for the LPR monitoring stack
+# These rules are evaluated every evaluation_interval (default 15 s).
+# ---------------------------------------------------------------------------
+groups:
+  - name: lpr_alerts
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------
+      # High error rate – more than 5% of requests failing with 5xx
+      # ---------------------------------------------------------------
+      - alert: HighErrorRate
+        expr: |
+          rate(http_errors_total[5m])
+          /
+          rate(http_requests_total[5m])
+          > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanizePercentage }} of requests)"
+          description: >
+            The HTTP 5xx error rate has been above 5% for more than 2 minutes.
+            Current rate: {{ $value | humanizePercentage }}.
+
+      # ---------------------------------------------------------------
+      # High memory usage – container / system memory above 85 %
+      # ---------------------------------------------------------------
+      - alert: HighMemoryUsage
+        expr: |
+          (system_memory_usage_bytes{type="used"}
+          /
+          system_memory_usage_bytes{type="total"})
+          > 0.85
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage ({{ $value | humanizePercentage }})"
+          description: >
+            System memory usage has exceeded 85 % for more than 3 minutes.
+            Current usage: {{ $value | humanizePercentage }}.
+
+      # ---------------------------------------------------------------
+      # Backend unavailable – Prometheus cannot scrape /metrics
+      # ---------------------------------------------------------------
+      - alert: BackendUnavailable
+        expr: up{job="lpr-backend", instance="backend:8000"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LPR Backend is DOWN"
+          description: >
+            Prometheus cannot reach the LPR backend on job "lpr-backend".
+            The service may have crashed or be unreachable.
+
+      # ---------------------------------------------------------------
+      # High CPU usage – sustained above 80 %
+      # ---------------------------------------------------------------
+      - alert: HighCpuUsage
+        expr: system_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage ({{ $value }}%)"
+          description: >
+            CPU usage has been above 80 % for more than 5 minutes.
+            Current value: {{ $value }}%.

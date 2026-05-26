@@ -48,6 +48,10 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_BACKEND_URL: redis://redis:6379/0
       REDIS_URL: redis://redis:6379/0
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-3}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-0}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-30}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-1800}
     depends_on:
       redis:
         condition: service_healthy
@@ -68,7 +72,11 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_BACKEND_URL: redis://redis:6379/0
       REDIS_URL: redis://redis:6379/0
-    command: celery -A src.backend.tasks.celery_app:celery_app worker --loglevel=info
+      DB_POOL_SIZE: ${WORKER_DB_POOL_SIZE:-1}
+      DB_MAX_OVERFLOW: ${WORKER_DB_MAX_OVERFLOW:-0}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-30}
+      DB_POOL_RECYCLE: ${DB_POOL_RECYCLE:-1800}
+    command: celery -A src.backend.tasks.celery_app:celery_app worker --loglevel=info --concurrency=${CELERY_WORKER_CONCURRENCY:-1}
     depends_on:
       redis:
         condition: service_healthy
@@ -87,12 +95,61 @@ services:
     container_name: lpr_frontend
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Monitoring – Prometheus (metrics store & alert evaluator)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: lpr_prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+      - lpr_prometheus_data:/prometheus
+    depends_on:
+      backend:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Monitoring – Grafana (visualisation)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: lpr_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/lpr_dashboard.json
+      GF_INSTALL_PLUGINS: ""
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./deploy/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./deploy/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deploy/grafana/dashboards/lpr_dashboard.json:/etc/grafana/dashboards/lpr_dashboard.json:ro
+      - lpr_grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Monitoring – backend port exposure so Prometheus can scrape from host
+  # ---------------------------------------------------------------------------
   nginx:
     image: nginx:1.27-alpine
     container_name: lpr_nginx
     restart: unless-stopped
     ports:
       - "${NGINX_HTTP_PORT:-8080}:80"
+      # Expose backend port so Prometheus can scrape if running outside Docker
     volumes:
       - ./deploy/nginx/edge.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
@@ -103,3 +160,6 @@ services:
 volumes:
   lpr_redis_data:
   lpr_minio_data:
+  lpr_backend_logs:
+  lpr_prometheus_data:
+  lpr_grafana_data:
