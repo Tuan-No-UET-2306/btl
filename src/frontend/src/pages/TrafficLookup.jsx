@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trafficApi } from "../api/trafficClient";
 import { getCachedProfile } from "../utils/auth";
 import {
@@ -121,10 +121,10 @@ function CreateViolationSection({ onViolationCreated }) {
             />
           </div>
           <div className="form-group" style={{ flex: "0 1 100px", marginBottom: 0 }}>
-            <label>Points (2-10)</label>
+            <label>Points (0-10)</label>
             <input
               type="number"
-              min={2}
+              min={0}
               max={10}
               value={violationForm.points_deducted}
               onChange={(e) => handleChange("points_deducted", e.target.value)}
@@ -190,6 +190,35 @@ export default function TrafficLookup() {
   });
   const [complaintResult, setComplaintResult] = useState("");
   const [complaintLoading, setComplaintLoading] = useState(false);
+
+  // Danh sách biển số đang vi phạm
+  const [violatedPlates, setViolatedPlates] = useState([]);
+  const [violatedPlatesLoading, setViolatedPlatesLoading] = useState(true);
+  const [violatedPage, setViolatedPage] = useState(1);
+  const VIOLATED_PAGE_SIZE = 5;
+
+  useEffect(() => {
+    fetchViolatedPlates();
+  }, []);
+
+  const fetchViolatedPlates = async () => {
+    setViolatedPlatesLoading(true);
+    try {
+      const data = await trafficApi.listViolatedPlates();
+      setViolatedPlates(data || []);
+    } catch (err) {
+      console.error("Failed to load violated plates:", err);
+    } finally {
+      setViolatedPlatesLoading(false);
+    }
+  };
+
+  // Pagination
+  const totalViolatedPages = Math.max(1, Math.ceil(violatedPlates.length / VIOLATED_PAGE_SIZE));
+  const paginatedPlates = violatedPlates.slice(
+    (violatedPage - 1) * VIOLATED_PAGE_SIZE,
+    violatedPage * VIOLATED_PAGE_SIZE
+  );
 
   const handleLookup = async (e) => {
     e.preventDefault();
@@ -302,6 +331,198 @@ export default function TrafficLookup() {
           <Search size={16} /> {loading ? "Searching..." : "Lookup"}
         </button>
       </form>
+
+      {/* Danh sách biển số đang vi phạm */}
+      <div style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            color: "var(--muted)",
+          }}
+        >
+          <AlertTriangle size={14} color="#ff6b6b" />
+          Biển số đang vi phạm ({violatedPlates.length})
+        </div>
+
+        {violatedPlatesLoading ? (
+          <div style={{ display: "flex", gap: 8, overflow: "hidden" }}>
+            <div className="skeleton" style={{ height: 48, width: "100%", borderRadius: 8 }} />
+          </div>
+        ) : violatedPlates.length === 0 ? (
+          <div
+            style={{
+              padding: "10px 14px",
+              borderRadius: 8,
+              background: "rgba(46,213,115,0.06)",
+              border: "1px solid rgba(46,213,115,0.15)",
+              fontSize: 12,
+              color: "var(--muted)",
+            }}
+          >
+            ✅ Không có biển số nào đang vi phạm
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {paginatedPlates.map((item, idx) => {
+              const remaining = item.points_remaining;
+              const barColor =
+                remaining <= 3 ? "#ff6b6b" : remaining <= 6 ? "#ffd28b" : "#2ed573";
+              return (
+                <div
+                  key={item.plate_number || idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "1px solid var(--stroke)",
+                    background: "var(--panel-bg)",
+                    animation: `fadeInRight 0.25s ease ${idx * 0.05}s both`,
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                    e.currentTarget.style.transform = "translateX(4px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--panel-bg)";
+                    e.currentTarget.style.transform = "translateX(0)";
+                  }}
+                >
+                  {/* Plate + Info */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        width: 6,
+                        height: 40,
+                        borderRadius: 3,
+                        background: barColor,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>
+                        {item.plate_number || "Không xác định"}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {item.violation_count} vi phạm · còn {remaining}/{MAX_POINTS} điểm
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Points bar */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <div
+                      style={{
+                        width: 60,
+                        height: 6,
+                        borderRadius: 3,
+                        background: "rgba(255,255,255,0.08)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${(remaining / MAX_POINTS) * 100}%`,
+                          height: "100%",
+                          borderRadius: 3,
+                          background: barColor,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: barColor,
+                        minWidth: 32,
+                        textAlign: "right",
+                      }}
+                    >
+                      {remaining}/{MAX_POINTS}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Pagination */}
+            {totalViolatedPages > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: 8,
+                  gap: 8,
+                }}
+              >
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                  Trang {violatedPage}/{totalViolatedPages}
+                </span>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button
+                    className="btn btn-sm"
+                    disabled={violatedPage <= 1}
+                    onClick={() => setViolatedPage((p) => Math.max(1, p - 1))}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      color: "var(--text)",
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      opacity: violatedPage <= 1 ? 0.4 : 1,
+                    }}
+                  >
+                    Prev
+                  </button>
+                  {Array.from({ length: totalViolatedPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      className="btn btn-sm"
+                      onClick={() => setViolatedPage(p)}
+                      style={{
+                        background:
+                          p === violatedPage
+                            ? "var(--btn-cool)"
+                            : "rgba(255,255,255,0.06)",
+                        color: p === violatedPage ? "#05101f" : "var(--text)",
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        minWidth: 28,
+                      }}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    className="btn btn-sm"
+                    disabled={violatedPage >= totalViolatedPages}
+                    onClick={() =>
+                      setViolatedPage((p) => Math.min(totalViolatedPages, p + 1))
+                    }
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      color: "var(--text)",
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      opacity: violatedPage >= totalViolatedPages ? 0.4 : 1,
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Error */}
       {error && (

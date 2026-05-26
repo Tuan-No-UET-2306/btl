@@ -41,6 +41,19 @@ def create_complaint(
     return service.create_complaint(payload, current_user.id)
 
 
+@router.get("/violated-plates")
+def list_violated_plates(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    List all license plates that currently have pending violations,
+    grouped with total demerit points.
+    """
+    service = TrafficService(db)
+    return service.list_violated_plates()
+
+
 @router.get("/complaints")
 def list_complaints(
     db: Session = Depends(get_db),

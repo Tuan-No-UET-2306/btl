@@ -399,10 +399,10 @@ export default function AdminOperations() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Points Deducted (2-10)</label>
+                  <label>Points Deducted (0-10)</label>
                   <input
                     type="number"
-                    min={2}
+                    min={0}
                     max={10}
                     value={editForm.points_deducted}
                     onChange={(e) =>

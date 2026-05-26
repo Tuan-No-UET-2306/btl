@@ -225,7 +225,7 @@ class ViolationCreate(BaseModel):
     """Admin creates a new violation for a vehicle."""
     license_plate: str
     violation_type: str
-    points_deducted: int = Field(..., ge=2, le=10)
+    points_deducted: int = Field(..., ge=0, le=10)
     fine_amount: Optional[float] = None
 
 
@@ -237,6 +237,6 @@ class ComplaintStatusUpdate(BaseModel):
 class ViolationUpdate(BaseModel):
     """Admin updates violation details."""
     violation_type: Optional[str] = None
-    points_deducted: Optional[int] = Field(default=None, ge=2, le=10)
+    points_deducted: Optional[int] = Field(default=None, ge=0, le=10)
     fine_amount: Optional[float] = None
     status: Optional[str] = None
