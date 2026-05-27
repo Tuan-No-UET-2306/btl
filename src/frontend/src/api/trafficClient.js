@@ -47,4 +47,9 @@ export const trafficApi = {
       headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify(data),
     }),
+  listViolatedPlates: () =>
+    request("/api/v1/traffic/violated-plates", {
+      method: "GET",
+      headers: { ...authHeaders() },
+    }),
 };

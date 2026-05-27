@@ -98,6 +98,35 @@ class TrafficRepository:
         except Exception:
             return 0
 
+    def list_violated_plates(self) -> list[dict]:
+        """List all plates that have pending violations, grouped with total points."""
+        try:
+            result = self.db.execute(
+                text("SELECT "
+                     "COALESCE(veh.license_plate, '') as plate_number, "
+                     "COUNT(v.id) as violation_count, "
+                     "SUM(COALESCE(v.points_deducted, 0)) as total_points, "
+                     "MAX(v.issued_at) as latest_violation "
+                     "FROM violations v "
+                     "LEFT JOIN vehicles veh ON v.vehicle_id = veh.id "
+                     "WHERE v.status = 'pending' "
+                     "GROUP BY veh.license_plate "
+                     "ORDER BY latest_violation DESC")
+            ).fetchall()
+            return [
+                {
+                    "plate_number": r[0],
+                    "violation_count": r[1],
+                    "total_points": r[2] or 0,
+                    "points_remaining": max(0, 12 - (r[2] or 0)),
+                    "latest_violation": r[3],
+                }
+                for r in result
+            ]
+        except Exception as e:
+            print(f"Error in list_violated_plates: {e}")
+            return []
+
     def _ensure_vehicle_exists(self, plate_number: str) -> int:
         """Find a vehicle by plate or create one, return its ID."""
         existing = self.find_vehicle_by_plate(plate_number)
@@ -223,7 +252,6 @@ class TrafficRepository:
 
     def list_complaints(self, user_id: Optional[int] = None) -> list[dict]:
         """List all complaints. Gets plate_number from vehicles table via JOIN."""
-        # Get plate from vehicles.license_plate (the ONLY column that exists)
         base_sql = (
             "SELECT c.id, c.violation_id, "
             "COALESCE(veh.license_plate, '') as plate_number, "
@@ -247,7 +275,6 @@ class TrafficRepository:
                     text(base_sql + " ORDER BY c.created_at DESC")
                 ).fetchall()
         except Exception:
-            # Last resort: minimal query without vehicle join
             try:
                 simple = (
                     "SELECT c.id, c.violation_id, "

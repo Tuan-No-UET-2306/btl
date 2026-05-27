@@ -79,6 +79,22 @@ class BlacklistService:
         self.db.query(VideoDetection).filter(
             VideoDetection.plate_number == plate_number
         ).update({"is_blacklisted": False})
+
+        # Reset vehicles.is_blacklist for this plate
+        from ..models.models import Vehicle, Violation
+        vehicle = self.db.query(Vehicle).filter(
+            Vehicle.license_plate == plate_number
+        ).first()
+        if vehicle:
+            vehicle.is_blacklist = 0
+            vehicle.blacklist_reason = None
+
+            # Dismiss all pending violations for this vehicle to restore points to 12/12
+            self.db.query(Violation).filter(
+                Violation.vehicle_id == vehicle.id,
+                Violation.status == "pending",
+            ).update({"status": "dismissed"})
+
         self.db.commit()
 
     def is_blacklisted(self, plate_number: str) -> bool:

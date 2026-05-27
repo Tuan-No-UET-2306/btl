@@ -119,9 +119,9 @@ class TrafficService:
         """
         Admin creates a new violation for ANY plate number.
         No vehicle/DB validation required. Saves directly with plate string.
-        Points deducted range: 2-10.
+        Points deducted range: 0-10.
         """
-        points = max(2, min(10, payload.points_deducted))
+        points = max(0, min(10, payload.points_deducted))
 
         violation = self.repo.create_violation_simple(
             plate_number=payload.license_plate,
@@ -262,6 +262,10 @@ class TrafficService:
             "fine_amount": float(violation.fine_amount) if violation.fine_amount else None,
             "status": violation.status,
         }
+
+    def list_violated_plates(self) -> list[dict]:
+        """List all plates with pending violations and their total points."""
+        return self.repo.list_violated_plates()
 
     def list_complaints(self, user_id: Optional[int] = None, is_admin: bool = False) -> list[dict]:
         """
