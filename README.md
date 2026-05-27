@@ -14,25 +14,7 @@ Báo cáo chi tiết: [results/Báo_cáo_BTL_AI_SYSTEM.pdf](./results/Báo_cáo_
   <img src="./results/system_architecture.png" alt="Kiến trúc tổng quan hệ thống LPR" width="760">
 </p>
 
-## Đối chiếu tiêu chí chấm điểm
 
-| Tiêu chí | Cách dự án đáp ứng | Minh chứng trong repo |
-|---|---|---|
-| Chức năng | Nhận diện biển số từ ảnh, video và webcam; lưu lịch sử; tìm kiếm/lọc/export CSV; quản lý blacklist; tra cứu vi phạm; gửi và xử lý khiếu nại; phân quyền user/admin; quản lý người dùng. | `src/backend/api/endpoints/`, `src/backend/services/`, `src/frontend/src/pages/`, ảnh trong `results/` |
-| Đảm bảo yêu cầu | Bài toán đã chọn là License Plate Recognition. Hệ thống trả kết quả biển số, tọa độ, độ tin cậy và lưu dữ liệu phục vụ use case quản lý giao thông. Có đủ luồng Guest, User, Admin và các yêu cầu phi chức năng chính: JWT, RBAC, async video, realtime, monitoring. | Báo cáo PDF, `src/models/`, `docker-compose.prod.yml`, `deploy/` |
-| Tài liệu | README mô tả dự án, kiến trúc, chức năng, cách cài đặt, cách chạy, API, kiểm thử, demo và tài liệu kết quả. Báo cáo 52 trang nằm trong `results/`. | `README.md`, `results/Báo_cáo_BTL_AI_SYSTEM.pdf` |
-| Giao diện người dùng | Frontend React/Vite có giao diện đăng nhập, dashboard, nhận diện ảnh, webcam, lịch sử, traffic lookup, blacklist, khiếu nại, admin operations và quản lý users. | `src/frontend/src/pages/`, ảnh giao diện trong `results/` |
-| Điểm cộng | Có ứng dụng web triển khai online, Docker Compose production, Nginx reverse proxy, CI/CD GitHub Actions, Prometheus/Grafana, WebSocket realtime, Celery worker, MinIO storage. | `.github/workflows/ci-cd.yml`, `deploy/`, `docker-compose.prod.yml` |
-
-## Thông tin chung
-
-| Mục | Nội dung |
-|---|---|
-| Tên dự án | License Plate Recognition System |
-| Nhóm | 4conbo |
-| Môn học | Thực hành phát triển hệ thống AI |
-| Năm học | 2025-2026 |
-| Bài toán AI | Nhận diện biển số xe từ ảnh, video và webcam |
 
 ## Mục tiêu và phạm vi
 
