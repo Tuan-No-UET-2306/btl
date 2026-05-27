@@ -1,0 +1,371 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1720" viewBox="0 0 1240 1720" role="img" aria-labelledby="title desc">
+  <title id="title">Kiến trúc tổng quan hệ thống LPR</title>
+  <desc id="desc">Sơ đồ tổng quan các lớp Internet, Presentation, API, Service AI, Async Realtime, Data Access, Infrastructure và Monitoring của hệ thống nhận diện biển số xe.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#f3f7f6"/>
+    </linearGradient>
+    <filter id="shadow" x="-8%" y="-10%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1f2937" flood-opacity="0.12"/>
+    </filter>
+    <style>
+      .page { fill: url(#bg); }
+      .title { font: 800 30px Arial, sans-serif; fill: #16385d; letter-spacing: 0; }
+      .subtitle { font: 600 15px Arial, sans-serif; fill: #527087; letter-spacing: 0; }
+      .layer-title { font: 800 25px Arial, sans-serif; letter-spacing: 0; }
+      .layer-sub { font: 600 14px Arial, sans-serif; fill: #263442; letter-spacing: 0; }
+      .label { font: 700 14px Arial, sans-serif; fill: #15212d; letter-spacing: 0; }
+      .small { font: 600 12px Arial, sans-serif; fill: #334155; letter-spacing: 0; }
+      .tiny { font: 600 10px Arial, sans-serif; fill: #475569; letter-spacing: 0; }
+      .note { font: 700 13px Arial, sans-serif; fill: #1f2937; letter-spacing: 0; }
+      .route { font: 800 12px Arial, sans-serif; fill: #334155; letter-spacing: 0; }
+      .box { fill: #ffffff; stroke-width: 1.8; rx: 7; filter: url(#shadow); }
+      .soft { fill-opacity: 0.78; }
+      .arrow { stroke: #1f2937; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .flow { font: 800 13px Arial, sans-serif; fill: #111827; letter-spacing: 0; }
+      .mono { font: 700 12px Arial, sans-serif; fill: #0f172a; letter-spacing: 0; }
+    </style>
+    <marker id="arrow" markerWidth="11" markerHeight="8" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L11,4 L0,8 Z" fill="#1f2937"/>
+    </marker>
+    <g id="icon-globe">
+      <circle cx="0" cy="0" r="20" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M-19 0H19M0-20C8-12 8 12 0 20M0-20C-8-12-8 12 0 20M-13-13C-4-8 4-8 13-13M-13 13C-4 8 4 8 13 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g id="icon-screen">
+      <rect x="-18" y="-14" width="36" height="25" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M0 12v10M-12 22h24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g id="icon-lock">
+      <rect x="-14" y="-4" width="28" height="22" rx="4" fill="currentColor"/>
+      <path d="M-9-4v-8a9 9 0 0 1 18 0v8" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="0" cy="7" r="3" fill="#ffffff"/>
+    </g>
+    <g id="icon-car">
+      <path d="M-20 4h5l5-11h20l5 11h5v12h-40z" fill="currentColor"/>
+      <circle cx="-12" cy="18" r="5" fill="#ffffff" stroke="currentColor" stroke-width="3"/>
+      <circle cx="12" cy="18" r="5" fill="#ffffff" stroke="currentColor" stroke-width="3"/>
+      <path d="M-8-4h16l3 8h-22z" fill="#ffffff" opacity="0.75"/>
+    </g>
+    <g id="icon-camera">
+      <rect x="-19" y="-11" width="38" height="25" rx="5" fill="currentColor"/>
+      <circle cx="0" cy="1" r="8" fill="#ffffff"/>
+      <circle cx="0" cy="1" r="4" fill="currentColor"/>
+      <path d="M-10-11l4-6h12l4 6z" fill="currentColor"/>
+    </g>
+    <g id="icon-film">
+      <rect x="-17" y="-20" width="34" height="40" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M-7-18v36M7-18v36M-16-10h8M8-10h8M-16 0h8M8 0h8M-16 10h8M8 10h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+    <g id="icon-db">
+      <ellipse cx="0" cy="-16" rx="23" ry="9" fill="currentColor"/>
+      <path d="M-23-16v32c0 5 10 9 23 9s23-4 23-9v-32" fill="currentColor"/>
+      <ellipse cx="0" cy="16" rx="23" ry="9" fill="currentColor" opacity="0.82"/>
+      <path d="M-23 0c0 5 10 9 23 9s23-4 23-9" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.75"/>
+    </g>
+    <g id="icon-user">
+      <circle cx="0" cy="-10" r="11" fill="currentColor"/>
+      <path d="M-20 22c2-15 10-22 20-22s18 7 20 22z" fill="currentColor"/>
+    </g>
+    <g id="icon-shield">
+      <path d="M0-23l20 8v14c0 16-9 26-20 32-11-6-20-16-20-32v-14z" fill="currentColor"/>
+      <path d="M-8 2l6 6 12-16" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="icon-gear">
+      <path d="M0-23l5 8 9-3 5 9-7 6 2 9 8 5-5 9-9-3-7 7-1 9h-10l-1-9-7-7-9 3-5-9 8-5 2-9-7-6 5-9 9 3z" fill="currentColor"/>
+      <circle cx="0" cy="0" r="8" fill="#ffffff"/>
+    </g>
+    <g id="icon-queue">
+      <rect x="-20" y="-20" width="40" height="11" rx="2" fill="currentColor"/>
+      <rect x="-20" y="-5" width="40" height="11" rx="2" fill="currentColor" opacity="0.82"/>
+      <rect x="-20" y="10" width="40" height="11" rx="2" fill="currentColor" opacity="0.64"/>
+    </g>
+    <g id="icon-cloud">
+      <path d="M-24 12h47c8 0 14-6 14-14s-6-14-14-14c-2 0-4 0-6 1-4-9-12-15-23-15-13 0-24 10-25 23-8 2-13 9-13 18 0 11 8 20 20 20z" fill="currentColor"/>
+    </g>
+    <g id="icon-chart">
+      <rect x="-18" y="2" width="8" height="17" fill="currentColor" rx="1"/>
+      <rect x="-4" y="-7" width="8" height="26" fill="currentColor" rx="1"/>
+      <rect x="10" y="-18" width="8" height="37" fill="currentColor" rx="1"/>
+    </g>
+    <g id="icon-server">
+      <rect x="-23" y="-21" width="46" height="13" rx="3" fill="currentColor"/>
+      <rect x="-23" y="-4" width="46" height="13" rx="3" fill="currentColor" opacity="0.86"/>
+      <rect x="-23" y="13" width="46" height="13" rx="3" fill="currentColor" opacity="0.72"/>
+      <circle cx="14" cy="-14" r="2" fill="#ffffff"/>
+      <circle cx="14" cy="3" r="2" fill="#ffffff"/>
+      <circle cx="14" cy="20" r="2" fill="#ffffff"/>
+    </g>
+  </defs>
+
+  <rect class="page" x="0" y="0" width="1240" height="1720"/>
+  <rect x="34" y="28" width="1172" height="1664" rx="26" fill="#ffffff" stroke="#d8e3ef" stroke-width="2"/>
+
+  <text x="620" y="74" text-anchor="middle" class="title">KIẾN TRÚC TỔNG QUAN HỆ THỐNG LPR</text>
+  <text x="620" y="102" text-anchor="middle" class="subtitle">Nhận diện biển số xe | Quản lý lịch sử | Traffic lookup | Video/Webcam realtime</text>
+
+  <!-- Internet / Edge -->
+  <rect x="170" y="132" width="900" height="76" rx="8" fill="#eef6ff" stroke="#0f64c4" stroke-width="2.4"/>
+  <g transform="translate(380 170)" style="color:#0f64c4"><use href="#icon-globe"/></g>
+  <text x="620" y="165" text-anchor="middle" class="layer-title" fill="#07559e">INTERNET / CLIENT</text>
+  <text x="620" y="190" text-anchor="middle" class="layer-sub">Browser, HTTPS, WebSocket, Nginx reverse proxy</text>
+
+  <line x1="620" y1="208" x2="620" y2="250" class="arrow"/>
+  <text x="642" y="236" class="flow">HTTPS / WebSocket</text>
+
+  <!-- Presentation layer -->
+  <rect x="110" y="252" width="1020" height="255" rx="8" fill="#ecfff7" stroke="#10a970" stroke-width="2.4"/>
+  <g transform="translate(415 280)" style="color:#07936a"><use href="#icon-screen"/></g>
+  <text x="620" y="282" text-anchor="middle" class="layer-title" fill="#07855f">PRESENTATION LAYER</text>
+  <text x="620" y="306" text-anchor="middle" class="layer-sub">React 18 + Vite + React Router + Tailwind/DaisyUI</text>
+
+  <rect x="135" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(164 356) scale(.72)" style="color:#159a63"><use href="#icon-chart"/></g>
+  <text x="181" y="356" text-anchor="start" class="label">Dashboard</text>
+  <text x="181" y="378" text-anchor="start" class="tiny">Stats, activity</text>
+
+  <rect x="286" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(315 356) scale(.62)" style="color:#0f64c4"><use href="#icon-car"/></g>
+  <text x="332" y="354" text-anchor="start" class="label">LPR Upload</text>
+  <text x="332" y="376" text-anchor="start" class="tiny">Image LPR</text>
+
+  <rect x="437" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(466 356) scale(.62)" style="color:#7c3aed"><use href="#icon-film"/></g>
+  <text x="484" y="354" text-anchor="start" class="label">Video</text>
+  <text x="484" y="376" text-anchor="start" class="tiny">Upload, queue</text>
+
+  <rect x="588" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(617 356) scale(.62)" style="color:#ea580c"><use href="#icon-camera"/></g>
+  <text x="635" y="354" text-anchor="start" class="label">Webcam</text>
+  <text x="635" y="376" text-anchor="start" class="tiny">Realtime</text>
+
+  <rect x="739" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(768 356) scale(.62)" style="color:#2563eb"><use href="#icon-queue"/></g>
+  <text x="786" y="354" text-anchor="start" class="label">History</text>
+  <text x="786" y="376" text-anchor="start" class="tiny">Search, CSV</text>
+
+  <rect x="890" y="326" width="139" height="78" class="box" stroke="#10a970"/>
+  <g transform="translate(919 356) scale(.62)" style="color:#059669"><use href="#icon-car"/></g>
+  <text x="936" y="354" text-anchor="start" class="label">Traffic</text>
+  <text x="936" y="376" text-anchor="start" class="tiny">Lookup, violations</text>
+
+  <rect x="135" y="419" width="190" height="62" class="box" stroke="#10a970"/>
+  <g transform="translate(165 450) scale(.62)" style="color:#dc2626"><use href="#icon-shield"/></g>
+  <text x="197" y="445" text-anchor="start" class="label">Blacklist</text>
+  <text x="197" y="466" text-anchor="start" class="tiny">Plate watchlist</text>
+
+  <rect x="342" y="419" width="190" height="62" class="box" stroke="#10a970"/>
+  <g transform="translate(372 450) scale(.58)" style="color:#f97316"><use href="#icon-gear"/></g>
+  <text x="405" y="445" text-anchor="start" class="label">Complaints</text>
+  <text x="405" y="466" text-anchor="start" class="tiny">Violation appeals</text>
+
+  <rect x="549" y="419" width="555" height="62" class="box" stroke="#10a970"/>
+  <g transform="translate(585 450) scale(.58)" style="color:#6d28d9"><use href="#icon-user"/></g>
+  <text x="826" y="445" text-anchor="middle" class="label">Admin Operations / Users Management</text>
+  <text x="826" y="466" text-anchor="middle" class="tiny">Role-based screens for admin workflows</text>
+
+  <line x1="620" y1="507" x2="620" y2="552" class="arrow"/>
+  <text x="642" y="536" class="flow">HTTP REST API</text>
+
+  <!-- API layer -->
+  <rect x="110" y="554" width="1020" height="250" rx="8" fill="#edf6ff" stroke="#0f64c4" stroke-width="2.4"/>
+  <g transform="translate(410 584)" style="color:#0f64c4"><use href="#icon-globe"/></g>
+  <text x="620" y="586" text-anchor="middle" class="layer-title" fill="#0f64c4">API LAYER</text>
+  <text x="620" y="610" text-anchor="middle" class="layer-sub">FastAPI routers under /api/v1</text>
+
+  <rect x="132" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(157 662) scale(.52)" style="color:#0f407a"><use href="#icon-lock"/></g>
+  <text x="200" y="655" text-anchor="middle" class="label">Auth</text>
+  <text x="200" y="676" text-anchor="middle" class="route">/auth</text>
+
+  <rect x="256" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(281 662) scale(.52)" style="color:#0f64c4"><use href="#icon-user"/></g>
+  <text x="324" y="655" text-anchor="middle" class="label">Users</text>
+  <text x="324" y="676" text-anchor="middle" class="route">/users</text>
+
+  <rect x="380" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(405 662) scale(.48)" style="color:#0f64c4"><use href="#icon-car"/></g>
+  <text x="448" y="655" text-anchor="middle" class="label">LPR</text>
+  <text x="448" y="676" text-anchor="middle" class="route">/lpr</text>
+
+  <rect x="504" y="632" width="132" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(529 662) scale(.52)" style="color:#2563eb"><use href="#icon-gear"/></g>
+  <text x="590" y="655" text-anchor="middle" class="label">Detections</text>
+  <text x="590" y="676" text-anchor="middle" class="route">/detections</text>
+
+  <rect x="648" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(673 662) scale(.50)" style="color:#7c3aed"><use href="#icon-film"/></g>
+  <text x="716" y="655" text-anchor="middle" class="label">Videos</text>
+  <text x="716" y="676" text-anchor="middle" class="route">/videos</text>
+
+  <rect x="772" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(797 662) scale(.50)" style="color:#047857"><use href="#icon-car"/></g>
+  <text x="840" y="655" text-anchor="middle" class="label">Traffic</text>
+  <text x="840" y="676" text-anchor="middle" class="route">/traffic</text>
+
+  <rect x="896" y="632" width="112" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(921 662) scale(.50)" style="color:#dc2626"><use href="#icon-shield"/></g>
+  <text x="964" y="655" text-anchor="middle" class="label">Blacklist</text>
+  <text x="964" y="676" text-anchor="middle" class="route">/blacklist</text>
+
+  <rect x="1020" y="632" width="88" height="62" class="box" stroke="#0f64c4"/>
+  <g transform="translate(1043 662) scale(.50)" style="color:#0284c7"><use href="#icon-globe"/></g>
+  <text x="1079" y="655" text-anchor="middle" class="label">WS</text>
+  <text x="1079" y="676" text-anchor="middle" class="route">/ws</text>
+
+  <rect x="132" y="716" width="976" height="54" rx="5" fill="#f7fbff" stroke="#0f64c4" stroke-width="1.6"/>
+  <g transform="translate(204 743) scale(.45)" style="color:#0f407a"><use href="#icon-shield"/></g>
+  <text x="620" y="738" text-anchor="middle" class="note">Middleware: JWT Auth, Role checks, CORS, Exception handlers, Structured logging</text>
+  <text x="620" y="761" text-anchor="middle" class="tiny">Metrics exposed at /metrics for Prometheus scraping</text>
+
+  <line x1="620" y1="804" x2="620" y2="849" class="arrow"/>
+  <text x="642" y="832" class="flow">Business calls</text>
+
+  <!-- Service / AI layer -->
+  <rect x="110" y="851" width="1020" height="250" rx="8" fill="#fff7ed" stroke="#f28c18" stroke-width="2.4"/>
+  <g transform="translate(410 882)" style="color:#b45309"><use href="#icon-gear"/></g>
+  <text x="620" y="884" text-anchor="middle" class="layer-title" fill="#b45309">SERVICE + AI LAYER</text>
+  <text x="620" y="908" text-anchor="middle" class="layer-sub">Business logic, model inference and file operations</text>
+
+  <rect x="132" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(160 961) scale(.52)" style="color:#059669"><use href="#icon-lock"/></g>
+  <text x="184" y="954" text-anchor="start" class="label">Auth Service</text>
+  <text x="184" y="975" text-anchor="start" class="tiny">JWT / hash</text>
+
+  <rect x="282" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(310 961) scale(.50)" style="color:#0f64c4"><use href="#icon-car"/></g>
+  <text x="334" y="954" text-anchor="start" class="label">LPR Service</text>
+  <text x="334" y="975" text-anchor="start" class="tiny">Detector + OCR</text>
+
+  <rect x="432" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(460 961) scale(.50)" style="color:#7c3aed"><use href="#icon-film"/></g>
+  <text x="484" y="954" text-anchor="start" class="label">Video LPR</text>
+  <text x="484" y="975" text-anchor="start" class="tiny">OpenCV + SORT</text>
+
+  <rect x="582" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(610 961) scale(.50)" style="color:#2563eb"><use href="#icon-gear"/></g>
+  <text x="634" y="954" text-anchor="start" class="label">Detection</text>
+  <text x="634" y="975" text-anchor="start" class="tiny">Stats / CSV</text>
+
+  <rect x="732" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(760 961) scale(.50)" style="color:#047857"><use href="#icon-car"/></g>
+  <text x="784" y="954" text-anchor="start" class="label">Traffic</text>
+  <text x="784" y="975" text-anchor="start" class="tiny">Violations</text>
+
+  <rect x="882" y="930" width="136" height="64" class="box" stroke="#f28c18"/>
+  <g transform="translate(910 961) scale(.50)" style="color:#dc2626"><use href="#icon-shield"/></g>
+  <text x="934" y="954" text-anchor="start" class="label">Blacklist</text>
+  <text x="934" y="975" text-anchor="start" class="tiny">Watchlist</text>
+
+  <rect x="132" y="1014" width="476" height="54" rx="5" fill="#fffaf2" stroke="#f28c18" stroke-width="1.6"/>
+  <g transform="translate(203 1041) scale(.45)" style="color:#0f64c4"><use href="#icon-camera"/></g>
+  <text x="370" y="1035" text-anchor="middle" class="note">YOLOv5 detector + OCR models</text>
+  <text x="370" y="1057" text-anchor="middle" class="tiny">LP_detector_nano_61, LP_ocr_nano_62, PyTorch/ONNXRuntime</text>
+
+  <rect x="632" y="1014" width="476" height="54" rx="5" fill="#fffaf2" stroke="#f28c18" stroke-width="1.6"/>
+  <g transform="translate(703 1041) scale(.45)" style="color:#0f64c4"><use href="#icon-cloud"/></g>
+  <text x="870" y="1035" text-anchor="middle" class="note">MinIO Service + Realtime Crop Cache</text>
+  <text x="870" y="1057" text-anchor="middle" class="tiny">Upload images/videos, signed/public URLs, realtime crop serving</text>
+
+  <line x1="620" y1="1101" x2="620" y2="1147" class="arrow"/>
+  <text x="642" y="1130" class="flow">Queue + realtime events</text>
+
+  <!-- Async realtime layer -->
+  <rect x="110" y="1149" width="1020" height="176" rx="8" fill="#f3efff" stroke="#7c3aed" stroke-width="2.4"/>
+  <g transform="translate(410 1180)" style="color:#6d28d9"><use href="#icon-queue"/></g>
+  <text x="620" y="1182" text-anchor="middle" class="layer-title" fill="#6d28d9">ASYNC + REALTIME LAYER</text>
+  <text x="620" y="1206" text-anchor="middle" class="layer-sub">Background video processing and live browser updates</text>
+
+  <rect x="132" y="1228" width="222" height="64" class="box" stroke="#7c3aed"/>
+  <g transform="translate(168 1260) scale(.54)" style="color:#6d28d9"><use href="#icon-gear"/></g>
+  <text x="207" y="1254" text-anchor="start" class="label">Celery Worker</text>
+  <text x="207" y="1275" text-anchor="start" class="tiny">video_tasks queue</text>
+
+  <rect x="372" y="1228" width="222" height="64" class="box" stroke="#7c3aed"/>
+  <g transform="translate(408 1260) scale(.54)" style="color:#dc2626"><use href="#icon-queue"/></g>
+  <text x="447" y="1254" text-anchor="start" class="label">Redis Broker / Backend</text>
+  <text x="447" y="1275" text-anchor="start" class="tiny">Jobs, cache, pub/sub</text>
+
+  <rect x="612" y="1228" width="222" height="64" class="box" stroke="#7c3aed"/>
+  <g transform="translate(648 1260) scale(.54)" style="color:#0f64c4"><use href="#icon-globe"/></g>
+  <text x="687" y="1254" text-anchor="start" class="label">WebSocket Manager</text>
+  <text x="687" y="1275" text-anchor="start" class="tiny">/ws/stream, /ws/videos/id</text>
+
+  <rect x="852" y="1228" width="256" height="64" class="box" stroke="#7c3aed"/>
+  <g transform="translate(888 1260) scale(.54)" style="color:#047857"><use href="#icon-server"/></g>
+  <text x="927" y="1254" text-anchor="start" class="label">Redis Pub/Sub Events</text>
+  <text x="927" y="1275" text-anchor="start" class="tiny">Progress, status, realtime detections</text>
+
+  <line x1="620" y1="1325" x2="620" y2="1370" class="arrow"/>
+  <text x="642" y="1353" class="flow">Repository calls</text>
+
+  <!-- Data access layer -->
+  <rect x="110" y="1372" width="1020" height="160" rx="8" fill="#f6f0ff" stroke="#6d45a6" stroke-width="2.4"/>
+  <g transform="translate(410 1402)" style="color:#6d45a6"><use href="#icon-db"/></g>
+  <text x="620" y="1404" text-anchor="middle" class="layer-title" fill="#6d45a6">DATA ACCESS LAYER</text>
+  <text x="620" y="1428" text-anchor="middle" class="layer-sub">SQLAlchemy repositories and database models</text>
+
+  <rect x="132" y="1451" width="145" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(157 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-user"/></g>
+  <text x="216" y="1470" text-anchor="middle" class="label">User Repo</text>
+  <text x="216" y="1488" text-anchor="middle" class="tiny">users</text>
+
+  <rect x="292" y="1451" width="145" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(317 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-gear"/></g>
+  <text x="376" y="1470" text-anchor="middle" class="label">Detection Repo</text>
+  <text x="376" y="1488" text-anchor="middle" class="tiny">detections</text>
+
+  <rect x="452" y="1451" width="145" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(477 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-film"/></g>
+  <text x="536" y="1470" text-anchor="middle" class="label">Video Repo</text>
+  <text x="536" y="1488" text-anchor="middle" class="tiny">videos</text>
+
+  <rect x="612" y="1451" width="145" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(637 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-film"/></g>
+  <text x="696" y="1470" text-anchor="middle" class="label">Video Det Repo</text>
+  <text x="696" y="1488" text-anchor="middle" class="tiny">video_detections</text>
+
+  <rect x="772" y="1451" width="145" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(797 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-car"/></g>
+  <text x="856" y="1470" text-anchor="middle" class="label">Traffic Repo</text>
+  <text x="856" y="1488" text-anchor="middle" class="tiny">violations</text>
+
+  <rect x="932" y="1451" width="176" height="50" class="box" stroke="#6d45a6"/>
+  <g transform="translate(957 1476) scale(.38)" style="color:#6d45a6"><use href="#icon-shield"/></g>
+  <text x="1034" y="1470" text-anchor="middle" class="label">Blacklist Repo</text>
+  <text x="1034" y="1488" text-anchor="middle" class="tiny">blacklisted plates</text>
+
+  <line x1="620" y1="1532" x2="620" y2="1572" class="arrow"/>
+  <text x="642" y="1557" class="flow">Persistence + ops</text>
+
+  <!-- Infrastructure -->
+  <rect x="110" y="1574" width="1020" height="105" rx="8" fill="#eef6f8" stroke="#48647c" stroke-width="2.4"/>
+  <g transform="translate(312 1604)" style="color:#48647c"><use href="#icon-server"/></g>
+  <text x="620" y="1605" text-anchor="middle" class="layer-title" fill="#48647c">INFRASTRUCTURE + OBSERVABILITY</text>
+
+  <rect x="132" y="1621" width="172" height="42" rx="6" fill="#ffffff" stroke="#0f64c4" stroke-width="1.6"/>
+  <g transform="translate(157 1642) scale(.38)" style="color:#0f64c4"><use href="#icon-db"/></g>
+  <text x="222" y="1638" text-anchor="middle" class="label">PostgreSQL</text>
+  <text x="222" y="1655" text-anchor="middle" class="tiny">Supabase / ACID</text>
+
+  <rect x="322" y="1621" width="172" height="42" rx="6" fill="#ffffff" stroke="#10a970" stroke-width="1.6"/>
+  <g transform="translate(347 1642) scale(.38)" style="color:#10a970"><use href="#icon-cloud"/></g>
+  <text x="412" y="1638" text-anchor="middle" class="label">MinIO</text>
+  <text x="412" y="1655" text-anchor="middle" class="tiny">Images, videos</text>
+
+  <rect x="512" y="1621" width="172" height="42" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.6"/>
+  <g transform="translate(537 1642) scale(.38)" style="color:#dc2626"><use href="#icon-queue"/></g>
+  <text x="602" y="1638" text-anchor="middle" class="label">Redis</text>
+  <text x="602" y="1655" text-anchor="middle" class="tiny">Queue, pub/sub</text>
+
+  <rect x="702" y="1621" width="172" height="42" rx="6" fill="#ffffff" stroke="#f28c18" stroke-width="1.6"/>
+  <g transform="translate(727 1642) scale(.38)" style="color:#f28c18"><use href="#icon-camera"/></g>
+  <text x="792" y="1638" text-anchor="middle" class="label">YOLOv5/OCR</text>
+  <text x="792" y="1655" text-anchor="middle" class="tiny">Local model files</text>
+
+  <rect x="892" y="1621" width="216" height="42" rx="6" fill="#ffffff" stroke="#48647c" stroke-width="1.6"/>
+  <g transform="translate(917 1642) scale(.38)" style="color:#48647c"><use href="#icon-chart"/></g>
+  <text x="1003" y="1638" text-anchor="middle" class="label">Prometheus / Grafana</text>
+  <text x="1003" y="1655" text-anchor="middle" class="tiny">Metrics, dashboards, logs</text>
+</svg>
