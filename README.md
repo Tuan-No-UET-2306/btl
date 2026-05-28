@@ -9,6 +9,7 @@ https://lprtuannoiuemwork.tech/
 ```
 
 Báo cáo chi tiết: [results/Báo_cáo_BTL_AI_SYSTEM.pdf](./results/Báo_cáo_BTL_AI_SYSTEM.pdf)
+Báo cáo tóm tắt: [results/Báo_cáo_rút_gọn_BTL_AI_SYSTEM.pdf](./results/Báo_cáo_rút_gọn_BTL_AI_SYSTEM.pdf)
 
 <p align="center">
   <img src="./results/system_architecture.png" alt="Kiến trúc tổng quan hệ thống LPR" width="760">
